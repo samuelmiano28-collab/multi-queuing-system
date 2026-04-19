@@ -256,13 +256,15 @@ function NavLink({ label, active, onClick }) {
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled }) {
+  const isEnteredStatus = config.key === "Entered";
+  
   return (
     <div style={{
       background: "rgba(255,255,255,0.04)",
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: 12,
       padding: "12px 14px",
-      display: "flex", flexDirection: "row", gap: 12, alignItems: "flex-start",
+      display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start",
       transition: "background 0.15s, border-color 0.15s",
     }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.13)"; }}
@@ -309,13 +311,56 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
         )}
       </div>
 
-      {/* Action button (right side) */}
-      {config.btnLabel && (
+      {/* Action button(s) (right side) */}
+      {isEnteredStatus ? (
+        <div style={{ display: "flex", gap: 6, width: "100%", justifyContent: "space-between" }}>
+          <button
+            onClick={() => !isDisabled && onAction(entry, "callAgain")}
+            disabled={isDisabled}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#f59e0b,#f97316)",
+              border: "none", borderRadius: 8,
+              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
+              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
+              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(245,158,11,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
+            title="Call Again"
+          >
+            Call Again
+          </button>
+          <button
+            onClick={() => !isDisabled && onAction(entry, "serving")}
+            disabled={isDisabled}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#10b981,#059669)",
+              border: "none", borderRadius: 8,
+              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
+              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
+              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(16,185,129,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
+            title="Now Serving"
+          >
+            Serving
+          </button>
+        </div>
+      ) : config.btnLabel && (
         <button
           onClick={() => !isDisabled && onAction(entry)}
           disabled={isDisabled}
           style={{
-            padding: "7px 12px",
+            width: "100%", padding: "7px 12px",
             background: isDisabled ? "rgba(148,163,184,0.3)" : config.btnColor,
             border: "none", borderRadius: 8,
             color: isDisabled ? "#64748b" : "#fff", fontSize: 11, fontWeight: 700,
@@ -437,21 +482,24 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  const handleAction = async (entry, config) => {
+  const handleAction = async (entry, config, actionType = null) => {
     const priorityId = entry.priorityNumber || entry.priority_number;
     if (config.requiresRemarks) {
       setRemarksTarget(entry);
     } else {
-      // Show "Please Enter The Room" immediately when Enter Room is clicked from Arrived
-      if (config.key === "Arrived" && config.nextStatus === "Entered") {
-        setSelectedEnteredStudent({ ...entry, status: "Entered" });
+      // Handle "Call Again" action - moves from Entered back to Arrived
+      if (actionType === "callAgain") {
+        await updateQueueEntryStatus(priorityId, "Arrived");
+        await logActivity(user?.id, user?.username, "Call Again", "Glam", `${entry.studentName || entry.student_name} (${priorityId}) called again`);
+        refreshQueue();
+        return;
       }
-      // Clear the display when that person moves out of Entered (to Now Serving or beyond)
-      if (config.key === "Entered") {
-        const sel = selectedEnteredStudent;
-        if (sel && (sel.priorityNumber === priorityId || sel.priority_number === priorityId)) {
-          setSelectedEnteredStudent(null);
-        }
+      // Handle "Serving" action - moves from Entered to Now Serving
+      if (actionType === "serving") {
+        await updateQueueEntryStatus(priorityId, "Now Serving");
+        await logActivity(user?.id, user?.username, "Status Update", "Glam", `${entry.studentName || entry.student_name} (${priorityId}): Now Serving`);
+        refreshQueue();
+        return;
       }
       await updateQueueEntryStatus(priorityId, config.nextStatus);
       await logActivity(user?.id, user?.username, "Status Update", "Glam", `${entry.studentName || entry.student_name} (${priorityId}): ${config.btnLabel}`);
@@ -477,13 +525,10 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
   };
 
   // Derived display data
-  const nowServing     = queue.find((e) => e.status === "Now Serving") || null;
-  const enteredList    = queue.filter((e) => e.status === "Entered");
+  const nowServingList = queue.filter((e) => e.status === "Now Serving");
   const arrivedList    = queue.filter((e) => e.status === "Arrived");
-  const selectedRoomEntry = selectedEnteredStudent || null;
-  const prepareEntry   = selectedRoomEntry;
+  const enteredList    = queue.filter((e) => e.status === "Entered");
   const waitingCount   = arrivedList.length + enteredList.length;
-  const displayMode    = selectedRoomEntry ? "enter-room" : "serving";
 
   useEffect(() => {
     if (!selectedEnteredStudent) return;
@@ -701,31 +746,21 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
 
               {/* MAIN DISPLAY */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                {displayMode === "enter-room" && selectedRoomEntry ? (
+                {nowServingList.length > 0 ? (
                   <div className="px-4 sm:px-10 py-8 sm:py-12 text-center">
-                    <p className="text-amber-300 text-xs font-bold uppercase tracking-[0.3em] mb-6">Please Enter The Room</p>
-                    <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2.5rem,6vw,5rem)" }}>
-                      {selectedRoomEntry.studentName || selectedRoomEntry.student_name}
-                    </h1>
-                    <p className="text-[#c9a84c] font-bold font-mono mt-3" style={{ fontSize: "clamp(1.25rem,3vw,2.25rem)" }}>
-                      {selectedRoomEntry.priorityNumber || selectedRoomEntry.priority_number}
-                    </p>
-                    <p className="text-slate-400 mt-2" style={{ fontSize: "clamp(0.875rem,1.8vw,1.125rem)" }}>
-                      {selectedRoomEntry.programName || selectedRoomEntry.program}
-                    </p>
-                  </div>
-                ) : nowServing ? (
-                  <div className="px-4 sm:px-10 py-8 sm:py-12 text-center">
-                    <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.3em] mb-6">Now Serving</p>
-                    <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2.5rem,6vw,5rem)" }}>
-                      {nowServing.studentName || nowServing.student_name}
-                    </h1>
-                    <p className="text-[#c9a84c] font-bold font-mono mt-3" style={{ fontSize: "clamp(1.25rem,3vw,2.25rem)" }}>
-                      {nowServing.priorityNumber || nowServing.priority_number}
-                    </p>
-                    <p className="text-slate-400 mt-2" style={{ fontSize: "clamp(0.875rem,1.8vw,1.125rem)" }}>
-                      {nowServing.programName || nowServing.program}
-                    </p>
+                    <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.3em] mb-4 sm:mb-6">Now Serving</p>
+                    <div className="space-y-4">
+                      {nowServingList.map((student, idx) => (
+                        <div key={idx}>
+                          <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2rem,5vw,3.5rem)" }}>
+                            {student.studentName || student.student_name}
+                          </h1>
+                          <p className="text-[#c9a84c] font-bold font-mono mt-2" style={{ fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>
+                            {student.priorityNumber || student.priority_number}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="px-4 sm:px-10 py-10 sm:py-16 text-center text-slate-500">
@@ -738,30 +773,21 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                 )}
               </div>
 
-              {/* PREPARE + NOW SERVING row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Prepare</p>
-                  {prepareEntry ? (
-                    <>
-                      <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{prepareEntry.student_name || prepareEntry.studentName}</p>
-                      <span className="text-slate-300 font-bold font-mono text-lg">{prepareEntry.priority_number || prepareEntry.priorityNumber}</span>
-                    </>
-                  ) : (
-                    <p className="text-slate-600 text-sm">No one preparing</p>
-                  )}
-                </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Now Serving</p>
-                  {nowServing ? (
-                    <>
-                      <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{nowServing.studentName || nowServing.student_name}</p>
-                      <span className="text-slate-300 font-bold font-mono text-lg">{nowServing.priorityNumber || nowServing.priority_number}</span>
-                    </>
-                  ) : (
-                    <p className="text-slate-600 text-sm">No one serving</p>
-                  )}
-                </div>
+              {/* PLEASE PREPARE row */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4 sm:mb-6 text-center">Please Prepare</p>
+                {arrivedList.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    {arrivedList.map((student, idx) => (
+                      <div key={idx} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-3 sm:p-4 text-center">
+                        <p className="text-white font-extrabold text-lg sm:text-xl">{student.studentName || student.student_name}</p>
+                        <span className="text-[#c9a84c] font-bold font-mono text-sm mt-1 inline-block">{student.priorityNumber || student.priority_number}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-600 text-sm text-center">No one preparing</p>
+                )}
               </div>
 
               {/* Newly registered highlight */}
@@ -814,7 +840,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry) => handleAction(entry, config)}
+                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={isEnteredButtonDisabled}
                       maxHeight="550px"
                     />
@@ -838,7 +864,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry) => handleAction(entry, config)}
+                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
                       maxHeight={config.key === "Now Serving" ? "250px" : "550px"}
                     />

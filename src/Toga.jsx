@@ -257,13 +257,15 @@ function NavLink({ label, active, onClick }) {
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled }) {
+  const isEnteredStatus = config.key === "Entered";
+  
   return (
     <div style={{
       background: "rgba(255,255,255,0.04)",
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: 12,
       padding: "12px 14px",
-      display: "flex", flexDirection: "row", gap: 12, alignItems: "flex-start",
+      display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start",
       transition: "background 0.15s, border-color 0.15s",
     }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.13)"; }}
@@ -310,13 +312,56 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
         )}
       </div>
 
-      {/* Action button (right side) */}
-      {config.btnLabel && (
+      {/* Action button(s) (right side) */}
+      {isEnteredStatus ? (
+        <div style={{ display: "flex", gap: 6, width: "100%", justifyContent: "space-between" }}>
+          <button
+            onClick={() => !isDisabled && onAction(entry, "callAgain")}
+            disabled={isDisabled}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#f59e0b,#f97316)",
+              border: "none", borderRadius: 8,
+              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
+              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
+              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(245,158,11,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
+            title="Call Again"
+          >
+            Call Again
+          </button>
+          <button
+            onClick={() => !isDisabled && onAction(entry, "serving")}
+            disabled={isDisabled}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#f59e0b,#f97316)",
+              border: "none", borderRadius: 8,
+              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
+              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
+              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(245,158,11,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
+            title="Now Serving"
+          >
+            Serving
+          </button>
+        </div>
+      ) : config.btnLabel && (
         <button
           onClick={() => !isDisabled && onAction(entry)}
           disabled={isDisabled}
           style={{
-            padding: "7px 12px",
+            width: "100%", padding: "7px 12px",
             background: isDisabled ? "rgba(148,163,184,0.3)" : config.btnColor,
             border: "none", borderRadius: 8,
             color: isDisabled ? "#64748b" : "#fff", fontSize: 11, fontWeight: 700,
@@ -438,20 +483,24 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  const handleAction = async (entry, config) => {
+  const handleAction = async (entry, config, actionType = null) => {
     const priorityId = entry.priority_number || entry.priorityNumber;
     if (config.requiresRemarks) {
       setRemarksTarget(entry);
     } else {
-      // Show "Please Enter The Room" immediately when Enter Room is clicked from Arrived
-      if (config.key === "Arrived" && config.nextStatus === "Entered") {
-        setSelectedEnteredStudent({ ...entry, status: "Entered" });
+      // Handle "Call Again" action - moves from Entered back to Arrived
+      if (actionType === "callAgain") {
+        await updateQueueEntryStatus(priorityId, "Arrived");
+        await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
+        refreshQueue();
+        return;
       }
-      // Clear when that person moves out of Entered
-      if (config.key === "Entered") {
-        if (selectedEnteredStudent && (selectedEnteredStudent.priority_number === priorityId || selectedEnteredStudent.priorityNumber === priorityId)) {
-          setSelectedEnteredStudent(null);
-        }
+      // Handle "Serving" action - moves from Entered to Now Serving
+      if (actionType === "serving") {
+        await updateQueueEntryStatus(priorityId, "Now Serving");
+        await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
+        refreshQueue();
+        return;
       }
       await updateQueueEntryStatus(priorityId, config.nextStatus);
       await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): ${config.btnLabel}`);
@@ -487,12 +536,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   }, [queue, selectedEnteredStudent]);
 
   // Derived display data
-  const nowServing     = queue.find((e) => e.status === "Now Serving") || null;
-  const enteredList    = queue.filter((e) => e.status === "Entered");
-  const arrivedList    = queue.filter((e) => e.status === "Arrived");
-  const prepareEntry   = enteredList[0] || null;
-  const waitingCount   = arrivedList.length + enteredList.length;
-  const displayMode    = selectedEnteredStudent ? "enter-room" : "serving";
+  const nowServingList = queue.filter((e) => e.status === \"Now Serving\");\n  const enteredList    = queue.filter((e) => e.status === \"Entered\");\n  const arrivedList    = queue.filter((e) => e.status === \"Arrived\");\n  const waitingCount   = arrivedList.length + enteredList.length;
 
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
 
@@ -805,7 +849,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry) => handleAction(entry, config)}
+                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={isEnteredButtonDisabled}
                       maxHeight="550px"
                     />
@@ -829,7 +873,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry) => handleAction(entry, config)}
+                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
                       maxHeight={config.key === "Now Serving" ? "250px" : "550px"}
                     />
