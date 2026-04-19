@@ -256,7 +256,7 @@ function NavLink({ label, active, onClick }) {
 }
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
-function KanbanCard({ entry, config, onAction, isDisabled }) {
+function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) {
   const isEnteredStatus = config.key === "Entered_OJT";
   
   return (
@@ -316,42 +316,40 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
       {isEnteredStatus ? (
         <div style={{ display: "flex", gap: 6, width: "100%", justifyContent: "space-between" }}>
           <button
-            onClick={() => !isDisabled && onAction(entry, "callAgain")}
-            disabled={isDisabled}
+            onClick={() => onAction(entry, "callAgain")}
             style={{
               flex: 1, padding: "7px 10px",
-              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#a855f7,#9333ea)",
+              background: "linear-gradient(135deg,#a855f7,#9333ea)",
               border: "none", borderRadius: 8,
-              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
-              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
-              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(168,85,247,0.35)",
+              color: "#fff", fontSize: 10, fontWeight: 700,
+              cursor: "pointer", letterSpacing: "0.04em",
+              boxShadow: "0 4px 12px rgba(168,85,247,0.35)",
               transition: "opacity 0.15s, transform 0.1s",
               whiteSpace: "nowrap",
-              opacity: isDisabled ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
-            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
-            title="Call Again"
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+            title="Send back to Arrived"
           >
             Call Again
           </button>
           <button
-            onClick={() => !isDisabled && onAction(entry, "serving")}
-            disabled={isDisabled}
+            onClick={() => !isServingDisabled && onAction(entry, "serving")}
+            disabled={isServingDisabled}
+            title={isServingDisabled ? "Someone is already being served" : "Move to Now Serving"}
             style={{
               flex: 1, padding: "7px 10px",
-              background: isDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#a855f7,#9333ea)",
+              background: isServingDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#10b981,#059669)",
               border: "none", borderRadius: 8,
-              color: isDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
-              cursor: isDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
-              boxShadow: isDisabled ? "none" : "0 4px 12px rgba(168,85,247,0.35)",
+              color: isServingDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
+              cursor: isServingDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
+              boxShadow: isServingDisabled ? "none" : "0 4px 12px rgba(16,185,129,0.35)",
               transition: "opacity 0.15s, transform 0.1s",
               whiteSpace: "nowrap",
-              opacity: isDisabled ? 0.5 : 1,
+              opacity: isServingDisabled ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
-            onMouseLeave={(e) => { if (!isDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
-            title="Now Serving"
+            onMouseEnter={(e) => { if (!isServingDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={(e) => { if (!isServingDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
           >
             Serving
           </button>
@@ -382,7 +380,7 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
 }
 
 // ─── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ config, entries, onAction, isDisabled, maxHeight = "550px" }) {
+function KanbanColumn({ config, entries, onAction, isDisabled, isServingDisabled, maxHeight = "550px" }) {
   return (
     <div style={{
       background: config.accent,
@@ -431,7 +429,7 @@ function KanbanColumn({ config, entries, onAction, isDisabled, maxHeight = "550p
           </div>
         ) : (
           entries.map((entry) => (
-            <KanbanCard key={entry.priorityNumber} entry={entry} config={config} onAction={onAction} isDisabled={isDisabled} />
+            <KanbanCard key={entry.priorityNumber} entry={entry} config={config} onAction={onAction} isDisabled={isDisabled} isServingDisabled={isServingDisabled} />
           ))
         )}
       </div>
@@ -531,8 +529,49 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   const enteredList    = queue.filter((e) => e.status === "Entered_OJT");
   const arrivedList    = queue.filter((e) => e.status === "Arrived_OJT");
   const waitingCount   = arrivedList.length + enteredList.length;
+  // ── Enter Room display queue ───────────────────────────────────────────────
+  // Shows 1 student at a time. If multiple enter simultaneously, cycles 3s each.
+  // Stays on last student until next "Enter Room" click.
+  const [displayedEntered, setDisplayedEntered] = useState(null);
+  const enterQueueRef  = useRef([]);
+  const cycleTimerRef  = useRef(null);
+  const seenEnteredRef = useRef(new Set());
 
-  const navPages = ["Registration", "Glam", "Toga", "OJT"];
+  useEffect(() => {
+    const newlyEntered = enteredList.filter(
+      (s) => !seenEnteredRef.current.has(s.priorityNumber || s.priority_number)
+    );
+    if (newlyEntered.length === 0) return;
+
+    newlyEntered.forEach((s) =>
+      seenEnteredRef.current.add(s.priorityNumber || s.priority_number)
+    );
+    enterQueueRef.current = [...enterQueueRef.current, ...newlyEntered];
+
+    if (enterQueueRef.current.length === 1 && !cycleTimerRef.current) {
+      setDisplayedEntered(enterQueueRef.current[0]);
+      enterQueueRef.current = [];
+      return;
+    }
+    if (!cycleTimerRef.current) {
+      setDisplayedEntered(enterQueueRef.current.shift());
+      cycleTimerRef.current = setInterval(() => {
+        if (enterQueueRef.current.length > 0) {
+          setDisplayedEntered(enterQueueRef.current.shift());
+        } else {
+          clearInterval(cycleTimerRef.current);
+          cycleTimerRef.current = null;
+        }
+      }, 3000);
+    }
+  }, [enteredList]);
+
+  useEffect(() => {
+    return () => { if (cycleTimerRef.current) clearInterval(cycleTimerRef.current); };
+  }, []);
+
+
+  const navPages = ["Registration", "Glam", "OJT", "Toga"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
@@ -732,53 +771,70 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                 </span>
               </div>
 
-              {/* MAIN DISPLAY */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                {nowServingList.length > 0 ? (
-                  <div className="px-4 sm:px-10 py-8 sm:py-12">
-                    <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.3em] mb-6 text-center">Now Serving</p>
-                    <div className="space-y-4">
+              {/* PLEASE ENTER THE ROOM — 1 student at a time */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 shadow-2xl">
+                <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.25em] mb-4 text-center">Please Enter the Room</p>
+                {displayedEntered ? (
+                  <div className="text-center py-2">
+                    <h2 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)" }}>
+                      {displayedEntered.studentName || displayedEntered.student_name}
+                    </h2>
+                    <p className="text-[#c9a84c] font-bold font-mono mt-2" style={{ fontSize: "clamp(0.9rem,2vw,1.25rem)" }}>
+                      {displayedEntered.priorityNumber || displayedEntered.priority_number}
+                    </p>
+                    {enterQueueRef.current.length > 0 && (
+                      <p className="text-slate-500 text-xs mt-3">+{enterQueueRef.current.length} more in queue</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-600 text-sm text-center">No one entering</p>
+                )}
+              </div>
+
+              {/* BOTTOM ROW — Please Prepare (left) | Now Serving (right) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Please Prepare */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-6 py-5 shadow-xl">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4 text-center">Please Prepare</p>
+                  {arrivedList.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {arrivedList.map((student, idx) => (
+                        <div key={idx} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl px-3 py-2 flex items-center justify-between">
+                          <p className="text-white font-bold text-sm truncate">{student.studentName || student.student_name}</p>
+                          <span className="text-[#c9a84c] font-bold font-mono text-xs ml-2 flex-shrink-0">{student.priorityNumber || student.priority_number}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-600 text-sm text-center">No one preparing</p>
+                  )}
+                </div>
+
+                {/* Now Serving */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-6 py-5 shadow-xl overflow-hidden">
+                  <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.25em] mb-4 text-center">Now Serving</p>
+                  {nowServingList.length > 0 ? (
+                    <div className="space-y-3">
                       {nowServingList.map((student, idx) => (
                         <div key={idx} className="text-center">
-                          <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2rem,5vw,4rem)" }}>
+                          <h2 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(1.25rem,3vw,2rem)" }}>
                             {student.studentName || student.student_name}
-                          </h1>
-                          <p className="text-[#c9a84c] font-bold font-mono mt-2" style={{ fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>
+                          </h2>
+                          <p className="text-[#c9a84c] font-bold font-mono mt-1" style={{ fontSize: "clamp(0.85rem,2vw,1.25rem)" }}>
                             {student.priorityNumber || student.priority_number}
-                          </p>
-                          <p className="text-slate-400 mt-1" style={{ fontSize: "clamp(0.75rem,1.5vw,1rem)" }}>
-                            {student.programCode || student.program} — {student.programName}
                           </p>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="px-4 sm:px-10 py-10 sm:py-16 text-center text-slate-500">
-                    <svg className="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                    </svg>
-                    <p className="text-lg font-semibold text-slate-400">No one is being served right now</p>
-                    <p className="text-sm text-slate-600 mt-1">Waiting for a student to be called</p>
-                  </div>
-                )}
-              </div>
-
-              {/* PLEASE PREPARE */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4 text-center">Please Prepare</p>
-                {arrivedList.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {arrivedList.map((student, idx) => (
-                      <div key={idx} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-3 sm:p-4 text-center">
-                        <p className="text-white font-extrabold text-lg sm:text-xl">{student.studentName || student.student_name}</p>
-                        <span className="text-[#c9a84c] font-bold font-mono text-sm mt-1 inline-block">{student.priorityNumber || student.priority_number}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-600 text-sm text-center">No one preparing</p>
-                )}
+                  ) : (
+                    <div className="text-center text-slate-500">
+                      <svg className="w-10 h-10 mx-auto mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                      </svg>
+                      <p className="text-sm text-slate-500">No one serving</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Newly arrived from Glam highlight */}
@@ -810,42 +866,18 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               </span>
             </div>
 
-            {/* Top Row: Done Toga, Arrived, Entered */}
-            <div style={{
-              display: "grid",
-              gap: 8,
-            }} className="kanban-top-row">
+            {/* Top Row: Done Glam, Arrived, Entered */}
+            <div
+              className="kanban-top-row"
+              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}
+            >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key === "Now Serving_OJT" || config.key === "Done OJT") return null;
-                
+
                 const entries = queue.filter((e) => e.status === (config.sourceStatus || config.key));
                 const nowServingCount = queue.filter((e) => e.status === "Now Serving_OJT").length;
-                const isEnteredButtonDisabled = config.key === "Entered_OJT" && nowServingCount > 0;
-                
-                return (
-                  <div key={config.key}>
-                    <KanbanColumn
-                      config={config}
-                      entries={entries}
-                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
-                      isDisabled={isEnteredButtonDisabled}
-                      maxHeight="550px"
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                const isServingDisabled = config.key === "Entered_OJT" && nowServingCount > 0;
 
-            {/* Bottom Row: Now Serving, Done OJT (equal half width, full width combined) */}
-            <div style={{
-              display: "grid",
-              gap: 12,
-            }} className="kanban-bottom-row">
-              {COLUMN_CONFIG.map((config) => {
-                if (config.key !== "Now Serving_OJT" && config.key !== "Done OJT") return null;
-                
-                const entries = queue.filter((e) => e.status === config.key);
-                
                 return (
                   <div key={config.key}>
                     <KanbanColumn
@@ -853,7 +885,33 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      maxHeight={config.key === "Now Serving_OJT" ? "250px" : "550px"}
+                      isServingDisabled={isServingDisabled}
+                      maxHeight="520px"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Row: Now Serving, Done OJT */}
+            <div
+              className="kanban-bottom-row"
+              style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
+            >
+              {COLUMN_CONFIG.map((config) => {
+                if (config.key !== "Now Serving_OJT" && config.key !== "Done OJT") return null;
+
+                const entries = queue.filter((e) => e.status === config.key);
+
+                return (
+                  <div key={config.key}>
+                    <KanbanColumn
+                      config={config}
+                      entries={entries}
+                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
+                      isDisabled={false}
+                      isServingDisabled={false}
+                      maxHeight={config.key === "Now Serving_OJT" ? "260px" : "520px"}
                     />
                   </div>
                 );
