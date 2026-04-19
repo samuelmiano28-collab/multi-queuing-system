@@ -402,6 +402,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   const [remarksTarget, setRemarksTarget] = useState(null);
   const [selectedEnteredStudent, setSelectedEnteredStudent] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const displayRef = useRef(null);
   const pollingRef = useRef(null);
 
@@ -561,7 +562,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
         </div>
         {/* Row 2: Nav links + Display/Controls toggle */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0">
+          <div className="hidden md:flex items-center gap-1 overflow-x-auto flex-1 min-w-0">
             {navPages.map((page) => (
               <NavLink
                 key={page}
@@ -583,6 +584,15 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               />
             ))}
           </div>
+          {/* Hamburger Menu for Mobile */}
+          <button
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
           {/* Display / Controls toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 4, flexShrink: 0 }}>
             <button
@@ -607,6 +617,39 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               }}>Controls</button>
           </div>
         </div>
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-white/10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex flex-col gap-1">
+              {navPages.map((page) => (
+                <button
+                  key={page}
+                  className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activePage === page
+                      ? "bg-[#c9a84c]/20 text-[#e2c06a] border border-[#c9a84c]/30"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (page === "Registration") {
+                      onBack();
+                    } else if (page === "Glam") {
+                      onGlamSubmit();
+                    } else if (page === "Toga") {
+                      onTogaSubmit();
+                    } else if (page === "Profile") {
+                      onProfileSubmit();
+                    } else {
+                      setActivePage(page);
+                    }
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
