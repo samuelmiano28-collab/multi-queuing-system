@@ -8,8 +8,21 @@ import Profile from "./Profile";
 import { logActivity } from "./mockDatabase";
 
 export default function App() {
-  const [page, setPage] = useState("login");
-  const [user, setUser] = useState(null);
+  // Restore user from localStorage on first load
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mqs_session");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const [page, setPage] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mqs_session");
+      return saved ? "registration" : "login";
+    } catch { return "login"; }
+  });
+
   const [newEntry, setNewEntry] = useState(null);
 
   useEffect(() => {
@@ -18,6 +31,7 @@ export default function App() {
 
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser);
+    localStorage.setItem("mqs_session", JSON.stringify(loggedInUser));
     logActivity(
       loggedInUser.id,
       loggedInUser.username,
@@ -40,6 +54,7 @@ export default function App() {
     }
     setUser(null);
     setNewEntry(null);
+    localStorage.removeItem("mqs_session");
     setPage("login");
   };
 
