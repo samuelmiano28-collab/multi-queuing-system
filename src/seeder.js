@@ -134,12 +134,9 @@ const seedAccounts = () => {
     },
   ];
 
-  if (!localStorage.getItem("mqs_accounts")) {
-    localStorage.setItem("mqs_accounts", JSON.stringify(accounts));
-    console.log("✅ Sample accounts seeded successfully!");
-  } else {
-    console.log("ℹ️ Accounts already seeded.");
-  }
+  // Always overwrite to ensure latest accounts are seeded
+  localStorage.setItem("mqs_accounts", JSON.stringify(accounts));
+  console.log("✅ Accounts seeded successfully!");
 };
 
 export default seedAccounts;
