@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getStudents, getPrograms, addToQueue, getQueue } from "./mockDatabase";
+import { getStudents, getPrograms, addToQueue, getQueue, clearQueue } from "./mockDatabase";
 
 // ─── Priority Number Generator ──────────────────────────────────────────────
 
@@ -318,6 +318,16 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
 function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleClearQueue = async () => {
+    setClearing(true);
+    await clearQueue();
+    setQueue([]);
+    setClearing(false);
+    setConfirmClear(false);
+  };
 
   // Reload when a new registration happens
   useEffect(() => {
@@ -363,6 +373,45 @@ function QueueSummary({ refreshKey, students, programs }) {
           background: "rgba(34,211,238,0.15)", color: "#e2c06a",
           borderRadius: 20, padding: "1px 9px", fontSize: 11, fontWeight: 700,
         }}>{queue.length}</span>
+
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          {confirmClear ? (
+            <>
+              <span style={{ color: "#f87171", fontSize: 11, fontWeight: 600 }}>Are you sure?</span>
+              <button
+                onClick={handleClearQueue}
+                disabled={clearing}
+                style={{
+                  padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.5)", color: "#f87171",
+                }}
+              >{clearing ? "Clearing…" : "Yes, Clear"}</button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                style={{
+                  padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#94a3b8",
+                }}
+              >Cancel</button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              disabled={queue.length === 0}
+              style={{
+                padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: queue.length === 0 ? "not-allowed" : "pointer",
+                background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171",
+                opacity: queue.length === 0 ? 0.4 : 1, transition: "all 0.15s",
+                display: "inline-flex", alignItems: "center", gap: 4,
+              }}
+            >
+              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear Queue
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Fixed-height scrollable table container */}

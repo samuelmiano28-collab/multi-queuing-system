@@ -243,6 +243,22 @@ export async function removeFromQueue(priorityNumber) {
   return true;
 }
 
+/**
+ * Deletes ALL entries from mqs_queue (clears the entire queue).
+ */
+export async function clearQueue() {
+  const { error } = await supabase
+    .from("mqs_queue")
+    .delete()
+    .neq("id", 0); // matches all rows
+
+  if (error) {
+    console.error("clearQueue error:", error.message);
+    return false;
+  }
+  return true;
+}
+
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
 /**
@@ -310,6 +326,7 @@ export default {
   addToQueue,
   updateQueueEntryStatus,
   removeFromQueue,
+  clearQueue,
   logActivity,
   getActivities,
 };
