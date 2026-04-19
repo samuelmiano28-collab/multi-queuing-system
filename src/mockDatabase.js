@@ -244,18 +244,34 @@ export async function removeFromQueue(priorityNumber) {
 }
 
 /**
- * Deletes ALL entries from mqs_queue (clears the entire queue).
+ * Clears ALL entries from mqs_queue.
+ * Fetches all IDs first then deletes by ID array — works even with RLS policies
+ * that block blanket deletes.
  */
 export async function clearQueue() {
-  const { error } = await supabase
+  const { data, error: fetchError } = await supabase
     .from("mqs_queue")
-    .delete()
-    .neq("id", 0); // matches all rows
+    .select("id");
 
-  if (error) {
-    console.error("clearQueue error:", error.message);
+  if (fetchError) {
+    console.error("clearQueue fetch error:", fetchError.message);
     return false;
   }
+
+  if (!data || data.length === 0) return true;
+
+  const ids = data.map((row) => row.id);
+
+  const { error: deleteError } = await supabase
+    .from("mqs_queue")
+    .delete()
+    .in("id", ids);
+
+  if (deleteError) {
+    console.error("clearQueue delete error:", deleteError.message);
+    return false;
+  }
+
   return true;
 }
 
