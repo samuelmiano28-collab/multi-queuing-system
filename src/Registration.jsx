@@ -522,6 +522,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
   const [error, setError] = useState("");
   const [queueRefreshKey, setQueueRefreshKey] = useState(0);
   const [activePage, setActivePage] = useState("Registration");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const nextSequence = getDailyCount() + 1;
   const previewPriority = generatePriorityNumber(nextSequence);
@@ -640,28 +641,72 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
           <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
         </div>
         {/* Row 2: Nav Links */}
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center gap-1 overflow-x-auto">
-          {navPages.map((page) => (
-            <NavLink
-              key={page}
-              label={page}
-              active={activePage === page}
-              onClick={() => {
-                if (page === "Glam") {
-                  onSubmit(null);
-                } else if (page === "Toga") {
-                  onTogaSubmit();
-                } else if (page === "OJT") {
-                  onOJTSubmit();
-                } else if (page === "Profile") {
-                  onProfileSubmit();
-                } else {
-                  setActivePage(page);
-                }
-              }}
-            />
-          ))}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between">
+          <div className="hidden md:flex items-center gap-1 overflow-x-auto">
+            {navPages.map((page) => (
+              <NavLink
+                key={page}
+                label={page}
+                active={activePage === page}
+                onClick={() => {
+                  if (page === "Glam") {
+                    onSubmit(null);
+                  } else if (page === "Toga") {
+                    onTogaSubmit();
+                  } else if (page === "OJT") {
+                    onOJTSubmit();
+                  } else if (page === "Profile") {
+                    onProfileSubmit();
+                  } else {
+                    setActivePage(page);
+                  }
+                }}
+              />
+            ))}
+          </div>
+          {/* Hamburger Menu for Mobile */}
+          <button
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
         </div>
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-white/10">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex flex-col gap-1">
+              {navPages.map((page) => (
+                <button
+                  key={page}
+                  className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activePage === page
+                      ? "bg-[#c9a84c]/20 text-[#e2c06a] border border-[#c9a84c]/30"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (page === "Glam") {
+                      onSubmit(null);
+                    } else if (page === "Toga") {
+                      onTogaSubmit();
+                    } else if (page === "OJT") {
+                      onOJTSubmit();
+                    } else if (page === "Profile") {
+                      onProfileSubmit();
+                    } else {
+                      setActivePage(page);
+                    }
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Main Content */}
