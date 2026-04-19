@@ -445,7 +445,6 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   const [activeTab, setActiveTab] = useState("display");
   const [activePage, setActivePage] = useState("Toga");
   const [remarksTarget, setRemarksTarget] = useState(null);
-  const [selectedEnteredStudent, setSelectedEnteredStudent] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const displayRef = useRef(null);
@@ -522,18 +521,6 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     refreshQueue();
     setRemarksTarget(null);
   };
-
-  // Clear selectedEnteredStudent when they reach Now Serving or beyond
-  useEffect(() => {
-    if (!selectedEnteredStudent) return;
-    const priorityId = selectedEnteredStudent.priority_number || selectedEnteredStudent.priorityNumber;
-    const isNowServingOrBeyond = queue.some(
-      (e) =>
-        (e.priority_number === priorityId || e.priorityNumber === priorityId) &&
-        (e.status === "Now Serving" || e.status === "Served")
-    );
-    if (isNowServingOrBeyond) setSelectedEnteredStudent(null);
-  }, [queue, selectedEnteredStudent]);
 
   // Derived display data
   const nowServingList = queue.filter((e) => e.status === "Now Serving");
@@ -743,31 +730,24 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
 
               {/* MAIN DISPLAY */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                {nowServing ? (
-                  <div className="px-4 sm:px-10 py-8 sm:py-12 text-center">
-                    <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.3em] mb-6">Now Serving</p>
-                    <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2.5rem,6vw,5rem)" }}>
-                      {nowServing.studentName}
-                    </h1>
-                    <p className="text-[#c9a84c] font-bold font-mono mt-3" style={{ fontSize: "clamp(1.25rem,3vw,2.25rem)" }}>
-                      {nowServing.priorityNumber}
-                    </p>
-                    <p className="text-slate-400 mt-2" style={{ fontSize: "clamp(0.875rem,1.8vw,1.125rem)" }}>
-                      {nowServing.programCode} — {nowServing.programName}
-                    </p>
-                  </div>
-                ) : displayMode === "enter-room" && selectedEnteredStudent ? (
-                  <div className="px-4 sm:px-10 py-8 sm:py-12 text-center">
-                    <p className="text-amber-300 text-xs font-bold uppercase tracking-[0.3em] mb-6">Please Enter The Room</p>
-                    <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2.5rem,6vw,5rem)" }}>
-                      {selectedEnteredStudent.student_name || selectedEnteredStudent.studentName}
-                    </h1>
-                    <p className="text-[#c9a84c] font-bold font-mono mt-3" style={{ fontSize: "clamp(1.25rem,3vw,2.25rem)" }}>
-                      {selectedEnteredStudent.priority_number || selectedEnteredStudent.priorityNumber}
-                    </p>
-                    <p className="text-slate-400 mt-2" style={{ fontSize: "clamp(0.875rem,1.8vw,1.125rem)" }}>
-                      {selectedEnteredStudent.program || selectedEnteredStudent.programName}
-                    </p>
+                {nowServingList.length > 0 ? (
+                  <div className="px-4 sm:px-10 py-8 sm:py-12">
+                    <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.3em] mb-6 text-center">Now Serving</p>
+                    <div className="space-y-4">
+                      {nowServingList.map((student, idx) => (
+                        <div key={idx} className="text-center">
+                          <h1 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(2rem,5vw,4rem)" }}>
+                            {student.studentName || student.student_name}
+                          </h1>
+                          <p className="text-[#c9a84c] font-bold font-mono mt-2" style={{ fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>
+                            {student.priorityNumber || student.priority_number}
+                          </p>
+                          <p className="text-slate-400 mt-1" style={{ fontSize: "clamp(0.75rem,1.5vw,1rem)" }}>
+                            {student.programCode || student.program} — {student.programName}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="px-4 sm:px-10 py-10 sm:py-16 text-center text-slate-500">
@@ -780,30 +760,21 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 )}
               </div>
 
-              {/* PREPARE + NOW SERVING row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Prepare</p>
-                  {prepareEntry ? (
-                    <>
-                      <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{prepareEntry.studentName}</p>
-                      <span className="text-slate-300 font-bold font-mono text-lg">{prepareEntry.priorityNumber}</span>
-                    </>
-                  ) : (
-                    <p className="text-slate-600 text-sm">No one preparing</p>
-                  )}
-                </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Now Serving</p>
-                  {nowServing ? (
-                    <>
-                      <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{nowServing.student_name}</p>
-                      <span className="text-slate-300 font-bold font-mono text-lg">{nowServing.priority_number}</span>
-                    </>
-                  ) : (
-                    <p className="text-slate-600 text-sm">No one serving</p>
-                  )}
-                </div>
+              {/* PLEASE PREPARE */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4 text-center">Please Prepare</p>
+                {arrivedList.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    {arrivedList.map((student, idx) => (
+                      <div key={idx} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-3 sm:p-4 text-center">
+                        <p className="text-white font-extrabold text-lg sm:text-xl">{student.studentName || student.student_name}</p>
+                        <span className="text-[#c9a84c] font-bold font-mono text-sm mt-1 inline-block">{student.priorityNumber || student.priority_number}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-600 text-sm text-center">No one preparing</p>
+                )}
               </div>
 
               {/* Newly arrived from Glam highlight */}
