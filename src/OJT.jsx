@@ -11,31 +11,31 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done Toga", "Arrived", "Entered", "Now Serving", "Served"];
+const STATUS_ORDER = ["Done Toga", "Arrived_OJT", "Entered_OJT", "Now Serving_OJT", "Done OJT"];
 
 const STATUS_STYLES = {
-  "Done Glam":     "bg-slate-500/20 text-slate-300 border-slate-500/30",
-  Arrived:        "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
-  Entered:        "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  "Now Serving":  "bg-green-500/20 text-green-300 border-green-500/30",
-  Served:         "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  "Done Toga":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  Arrived_OJT:    "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
+  Entered_OJT:    "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  "Now Serving_OJT": "bg-green-500/20 text-green-300 border-green-500/30",
+  "Done OJT":     "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
 };
 
 const COLUMN_CONFIG = [
   {
-    key: "Done Glam",
-    label: "Done Glam",
-    sourceStatus: "Served",
+    key: "Done Toga",
+    label: "Done Toga",
+    sourceStatus: "Done Toga",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
     btnLabel: "Arrived",
     btnColor: "linear-gradient(135deg,#3b82f6,#06b6d4)",
     btnShadow: "rgba(201,168,76,0.35)",
-    nextStatus: "Arrived",
+    nextStatus: "Arrived_OJT",
   },
   {
-    key: "Arrived",
+    key: "Arrived_OJT",
     label: "Arrived",
     color: "#e2c06a",
     accent: "rgba(96,165,250,0.12)",
@@ -43,10 +43,10 @@ const COLUMN_CONFIG = [
     btnLabel: "Enter Room",
     btnColor: "linear-gradient(135deg,#a855f7,#9333ea)",
     btnShadow: "rgba(201,168,76,0.35)",
-    nextStatus: "Entered",
+    nextStatus: "Entered_OJT",
   },
   {
-    key: "Entered",
+    key: "Entered_OJT",
     label: "Entered",
     color: "#e2c06a",
     accent: "rgba(201,168,76,0.10)",
@@ -54,23 +54,23 @@ const COLUMN_CONFIG = [
     btnLabel: "Serving",
     btnColor: "linear-gradient(135deg,#10b981,#059669)",
     btnShadow: "rgba(16,185,129,0.35)",
-    nextStatus: "Now Serving",
+    nextStatus: "Now Serving_OJT",
   },
   {
-    key: "Now Serving",
+    key: "Now Serving_OJT",
     label: "Now Serving",
     color: "#34d399",
     accent: "rgba(52,211,153,0.10)",
     border: "rgba(52,211,153,0.25)",
-    btnLabel: "Served",
+    btnLabel: "Done OJT",
     btnColor: "linear-gradient(135deg,#6366f1,#4f46e5)",
     btnShadow: "rgba(99,102,241,0.35)",
-    nextStatus: "Served",
+    nextStatus: "Done OJT",
     requiresRemarks: true,
   },
   {
-    key: "Served",
-    label: "Served",
+    key: "Done OJT",
+    label: "Done OJT",
     color: "#a78bfa",
     accent: "rgba(167,139,250,0.10)",
     border: "rgba(167,139,250,0.25)",
@@ -257,7 +257,7 @@ function NavLink({ label, active, onClick }) {
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled }) {
-  const isEnteredStatus = config.key === "Entered";
+  const isEnteredStatus = config.key === "Entered_OJT";
   
   return (
     <div style={{
@@ -297,7 +297,7 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
         </div>
 
         {/* Remarks (only for Served) */}
-        {entry.status === "Served" && entry.remarks && (
+        {entry.status === "Done OJT" && entry.remarks && (
           <div style={{
             padding: "6px 10px",
             background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)",
@@ -307,7 +307,7 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
             {entry.remarks}
           </div>
         )}
-        {entry.status === "Served" && !entry.remarks && (
+        {entry.status === "Done OJT" && !entry.remarks && (
           <div style={{ color: "#475569", fontSize: 11, fontStyle: "italic" }}>No remarks</div>
         )}
       </div>
@@ -493,14 +493,14 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
     } else {
       // Handle "Call Again" action - moves from Entered back to Arrived
       if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Arrived");
+        await updateQueueEntryStatus(priorityId, "Arrived_OJT");
         await logActivity(user?.id, user?.username, "Call Again", "OJT", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
         refreshQueue();
         return;
       }
       // Handle "Serving" action - moves from Entered to Now Serving
       if (actionType === "serving") {
-        await updateQueueEntryStatus(priorityId, "Now Serving");
+        await updateQueueEntryStatus(priorityId, "Now Serving_OJT");
         await logActivity(user?.id, user?.username, "Status Update", "OJT", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
         refreshQueue();
         return;
@@ -514,22 +514,22 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   const handleRemarksDone = async (remarks) => {
     if (!remarksTarget) return;
     await logActivity(user?.id, user?.username, "Remarks", "OJT", `Added remarks for ${remarksTarget.student_name} (${remarksTarget.priority_number}): ${remarks}`);
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Served");
+    await updateQueueEntryStatus(remarksTarget.priority_number, "Done OJT");
     refreshQueue();
     setRemarksTarget(null);
   };
 
   const handleRemarksSkip = async () => {
     if (!remarksTarget) return;
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Served");
+    await updateQueueEntryStatus(remarksTarget.priority_number, "Done OJT");
     refreshQueue();
     setRemarksTarget(null);
   };
 
   // Derived display data
-  const nowServingList = queue.filter((e) => e.status === "Now Serving");
-  const enteredList    = queue.filter((e) => e.status === "Entered");
-  const arrivedList    = queue.filter((e) => e.status === "Arrived");
+  const nowServingList = queue.filter((e) => e.status === "Now Serving_OJT");
+  const enteredList    = queue.filter((e) => e.status === "Entered_OJT");
+  const arrivedList    = queue.filter((e) => e.status === "Arrived_OJT");
   const waitingCount   = arrivedList.length + enteredList.length;
 
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
@@ -816,11 +816,11 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               gap: 8,
             }} className="kanban-top-row">
               {COLUMN_CONFIG.map((config) => {
-                if (config.key === "Now Serving" || config.key === "Served") return null;
+                if (config.key === "Now Serving_OJT" || config.key === "Done OJT") return null;
                 
                 const entries = queue.filter((e) => e.status === (config.sourceStatus || config.key));
-                const nowServingCount = queue.filter((e) => e.status === "Now Serving").length;
-                const isEnteredButtonDisabled = config.key === "Entered" && nowServingCount > 0;
+                const nowServingCount = queue.filter((e) => e.status === "Now Serving_OJT").length;
+                const isEnteredButtonDisabled = config.key === "Entered_OJT" && nowServingCount > 0;
                 
                 return (
                   <div key={config.key}>
@@ -836,13 +836,13 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               })}
             </div>
 
-            {/* Bottom Row: Now Serving, Served (equal half width, full width combined) */}
+            {/* Bottom Row: Now Serving, Done OJT (equal half width, full width combined) */}
             <div style={{
               display: "grid",
               gap: 12,
             }} className="kanban-bottom-row">
               {COLUMN_CONFIG.map((config) => {
-                if (config.key !== "Now Serving" && config.key !== "Served") return null;
+                if (config.key !== "Now Serving_OJT" && config.key !== "Done OJT") return null;
                 
                 const entries = queue.filter((e) => e.status === config.key);
                 
@@ -853,7 +853,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      maxHeight={config.key === "Now Serving" ? "250px" : "550px"}
+                      maxHeight={config.key === "Now Serving_OJT" ? "250px" : "550px"}
                     />
                   </div>
                 );

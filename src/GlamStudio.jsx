@@ -11,7 +11,7 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Registered", "Arrived", "Entered", "Now Serving", "Served"];
+const STATUS_ORDER = ["Registered", "Arrived_Glam", "Entered_Glam", "Now Serving_Glam", "Done Glam"];
 
 const STATUS_STYLES = {
   Registered:    "bg-slate-500/20 text-slate-300 border-slate-500/30",
@@ -31,10 +31,10 @@ const COLUMN_CONFIG = [
     btnLabel: "Arrived",
     btnColor: "linear-gradient(135deg,#3b82f6,#06b6d4)",
     btnShadow: "rgba(201,168,76,0.35)",
-    nextStatus: "Arrived",
+    nextStatus: "Arrived_Glam",
   },
   {
-    key: "Arrived",
+    key: "Arrived_Glam",
     label: "Arrived",
     color: "#e2c06a",
     accent: "rgba(96,165,250,0.12)",
@@ -42,10 +42,10 @@ const COLUMN_CONFIG = [
     btnLabel: "Enter Room",
     btnColor: "linear-gradient(135deg,#f59e0b,#f97316)",
     btnShadow: "rgba(245,158,11,0.35)",
-    nextStatus: "Entered",
+    nextStatus: "Entered_Glam",
   },
   {
-    key: "Entered",
+    key: "Entered_Glam",
     label: "Entered",
     color: "#fbbf24",
     accent: "rgba(251,191,36,0.10)",
@@ -53,23 +53,23 @@ const COLUMN_CONFIG = [
     btnLabel: "Serving",
     btnColor: "linear-gradient(135deg,#10b981,#059669)",
     btnShadow: "rgba(16,185,129,0.35)",
-    nextStatus: "Now Serving",
+    nextStatus: "Now Serving_Glam",
   },
   {
-    key: "Now Serving",
+    key: "Now Serving_Glam",
     label: "Now Serving",
     color: "#34d399",
     accent: "rgba(52,211,153,0.10)",
     border: "rgba(52,211,153,0.25)",
-    btnLabel: "Served",
+    btnLabel: "Done Glam",
     btnColor: "linear-gradient(135deg,#a855f7,#ec4899)",
     btnShadow: "rgba(201,168,76,0.35)",
-    nextStatus: "Served",
+    nextStatus: "Done Glam",
     requiresRemarks: true,
   },
   {
-    key: "Served",
-    label: "Served",
+    key: "Done Glam",
+    label: "Done Glam",
     color: "#e2c06a",
     accent: "rgba(192,132,252,0.10)",
     border: "rgba(192,132,252,0.25)",
@@ -256,7 +256,7 @@ function NavLink({ label, active, onClick }) {
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled }) {
-  const isEnteredStatus = config.key === "Entered";
+  const isEnteredStatus = config.key === "Entered_Glam";
   
   return (
     <div style={{
@@ -296,17 +296,17 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
         </div>
 
         {/* Remarks (only for Served) */}
-        {entry.status === "Served" && entry.remarks && (
+        {entry.status === "Done Glam" && entry.remarks && (
           <div style={{
             padding: "6px 10px",
-            background: "rgba(201,168,76,0.08)", border: "1px solid rgba(192,132,252,0.2)",
+            background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)",
             borderRadius: 8, color: "#e2c06a", fontSize: 11, lineHeight: 1.5,
           }}>
             <span style={{ color: "#94a3b8", fontWeight: 600 }}>Remarks: </span>
             {entry.remarks}
           </div>
         )}
-        {entry.status === "Served" && !entry.remarks && (
+        {entry.status === "Done Glam" && !entry.remarks && (
           <div style={{ color: "#475569", fontSize: 11, fontStyle: "italic" }}>No remarks</div>
         )}
       </div>
@@ -444,7 +444,6 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
   const [activeTab, setActiveTab] = useState("display");
   const [activePage, setActivePage] = useState("Glam");
   const [remarksTarget, setRemarksTarget] = useState(null);
-  const [selectedEnteredStudent, setSelectedEnteredStudent] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const displayRef = useRef(null);
@@ -489,14 +488,14 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
     } else {
       // Handle "Call Again" action - moves from Entered back to Arrived
       if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Arrived");
+        await updateQueueEntryStatus(priorityId, "Arrived_Glam");
         await logActivity(user?.id, user?.username, "Call Again", "Glam", `${entry.studentName || entry.student_name} (${priorityId}) called again`);
         refreshQueue();
         return;
       }
       // Handle "Serving" action - moves from Entered to Now Serving
       if (actionType === "serving") {
-        await updateQueueEntryStatus(priorityId, "Now Serving");
+        await updateQueueEntryStatus(priorityId, "Now Serving_Glam");
         await logActivity(user?.id, user?.username, "Status Update", "Glam", `${entry.studentName || entry.student_name} (${priorityId}): Now Serving`);
         refreshQueue();
         return;
@@ -511,7 +510,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
     if (!remarksTarget) return;
     const priorityId = remarksTarget.priorityNumber || remarksTarget.priority_number;
     await logActivity(user?.id, user?.username, "Remarks", "Glam", `Added remarks for ${remarksTarget.studentName || remarksTarget.student_name} (${priorityId}): ${remarks}`);
-    await updateQueueEntryStatus(priorityId, "Served");
+    await updateQueueEntryStatus(priorityId, "Done Glam");
     refreshQueue();
     setRemarksTarget(null);
   };
@@ -519,30 +518,16 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
   const handleRemarksSkip = async () => {
     if (!remarksTarget) return;
     const priorityId = remarksTarget.priorityNumber || remarksTarget.priority_number;
-    await updateQueueEntryStatus(priorityId, "Served");
+    await updateQueueEntryStatus(priorityId, "Done Glam");
     refreshQueue();
     setRemarksTarget(null);
   };
 
   // Derived display data
-  const nowServingList = queue.filter((e) => e.status === "Now Serving");
-  const arrivedList    = queue.filter((e) => e.status === "Arrived");
-  const enteredList    = queue.filter((e) => e.status === "Entered");
+  const nowServingList = queue.filter((e) => e.status === "Now Serving_Glam");
+  const arrivedList    = queue.filter((e) => e.status === "Arrived_Glam");
+  const enteredList    = queue.filter((e) => e.status === "Entered_Glam");
   const waitingCount   = arrivedList.length + enteredList.length;
-
-  useEffect(() => {
-    if (!selectedEnteredStudent) return;
-    const priorityId = selectedEnteredStudent.priorityNumber || selectedEnteredStudent.priority_number;
-    // Clear only when the student has moved past Entered (i.e. now serving or served)
-    const isNowServingOrBeyond = queue.some(
-      (e) =>
-        (e.priorityNumber === priorityId || e.priority_number === priorityId) &&
-        (e.status === "Now Serving" || e.status === "Served")
-    );
-    if (isNowServingOrBeyond) {
-      setSelectedEnteredStudent(null);
-    }
-  }, [queue, selectedEnteredStudent]);
 
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
 
@@ -829,11 +814,11 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
               style={{ gridTemplateColumns: "1fr" }}
             >
               {COLUMN_CONFIG.map((config) => {
-                if (config.key === "Now Serving" || config.key === "Served") return null;
+                if (config.key === "Now Serving_Glam" || config.key === "Done Glam") return null;
                 
                 const entries = queue.filter((e) => e.status === config.key);
-                const nowServingCount = queue.filter((e) => e.status === "Now Serving").length;
-                const isEnteredButtonDisabled = config.key === "Entered" && nowServingCount > 0;
+                const nowServingCount = queue.filter((e) => e.status === "Now Serving_Glam").length;
+                const isEnteredButtonDisabled = config.key === "Entered_Glam" && nowServingCount > 0;
                 
                 return (
                   <div key={config.key}>
@@ -855,7 +840,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
               gap: 12,
             }} className="kanban-bottom-row">
               {COLUMN_CONFIG.map((config) => {
-                if (config.key !== "Now Serving" && config.key !== "Served") return null;
+                if (config.key !== "Now Serving_Glam" && config.key !== "Done Glam") return null;
                 
                 const entries = queue.filter((e) => e.status === config.key);
                 
@@ -866,7 +851,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      maxHeight={config.key === "Now Serving" ? "250px" : "550px"}
+                        maxHeight={config.key === "Now Serving_Glam" ? "250px" : "550px"}
                     />
                   </div>
                 );

@@ -11,31 +11,31 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done Glam", "Arrived", "Entered", "Now Serving", "Served"];
+const STATUS_ORDER = ["Done Glam", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
 
 const STATUS_STYLES = {
-  "Done OJT":     "bg-slate-500/20 text-slate-300 border-slate-500/30",
-  Arrived:        "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
-  Entered:        "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
-  "Now Serving":  "bg-green-500/20 text-green-300 border-green-500/30",
-  Served:         "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
+  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  Arrived_Toga:   "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
+  Entered_Toga:   "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
+  "Now Serving_Toga": "bg-green-500/20 text-green-300 border-green-500/30",
+  "Done Toga":    "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
 };
 
 const COLUMN_CONFIG = [
   {
-    key: "Done OJT",
-    label: "Done OJT",
-    sourceStatus: "Served",
+    key: "Done Glam",
+    label: "Done Glam",
+    sourceStatus: "Done Glam",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
     btnLabel: "Arrived",
     btnColor: "linear-gradient(135deg,#3b82f6,#06b6d4)",
     btnShadow: "rgba(201,168,76,0.35)",
-    nextStatus: "Arrived",
+    nextStatus: "Arrived_Toga",
   },
   {
-    key: "Arrived",
+    key: "Arrived_Toga",
     label: "Arrived",
     color: "#e2c06a",
     accent: "rgba(96,165,250,0.12)",
@@ -43,10 +43,10 @@ const COLUMN_CONFIG = [
     btnLabel: "Enter Room",
     btnColor: "linear-gradient(135deg,#1a2f6e,#c9a84c)",
     btnShadow: "rgba(245,158,11,0.35)",
-    nextStatus: "Entered",
+    nextStatus: "Entered_Toga",
   },
   {
-    key: "Entered",
+    key: "Entered_Toga",
     label: "Entered",
     color: "#fbbf24",
     accent: "rgba(251,191,36,0.10)",
@@ -54,23 +54,23 @@ const COLUMN_CONFIG = [
     btnLabel: "Serving",
     btnColor: "linear-gradient(135deg,#10b981,#059669)",
     btnShadow: "rgba(16,185,129,0.35)",
-    nextStatus: "Now Serving",
+    nextStatus: "Now Serving_Toga",
   },
   {
-    key: "Now Serving",
+    key: "Now Serving_Toga",
     label: "Now Serving",
     color: "#34d399",
     accent: "rgba(52,211,153,0.10)",
     border: "rgba(52,211,153,0.25)",
-    btnLabel: "Served",
+    btnLabel: "Done Toga",
     btnColor: "linear-gradient(135deg,#10b981,#059669)",
     btnShadow: "rgba(249,115,22,0.35)",
-    nextStatus: "Served",
+    nextStatus: "Done Toga",
     requiresRemarks: true,
   },
   {
-    key: "Served",
-    label: "Served",
+    key: "Done Toga",
+    label: "Done Toga",
     color: "#e2c06a",
     accent: "rgba(201,168,76,0.10)",
     border: "rgba(201,168,76,0.25)",
@@ -257,7 +257,7 @@ function NavLink({ label, active, onClick }) {
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled }) {
-  const isEnteredStatus = config.key === "Entered";
+  const isEnteredStatus = config.key === "Entered_Toga";
   
   return (
     <div style={{
@@ -296,8 +296,8 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
           {entry.programCode} — <span style={{ color: "#94a3b8" }}>{entry.programName}</span>
         </div>
 
-        {/* Remarks (only for Served) */}
-        {entry.status === "Served" && entry.remarks && (
+        {/* Remarks (only for Done Toga) */}
+        {entry.status === "Done Toga" && entry.remarks && (
           <div style={{
             padding: "6px 10px",
             background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)",
@@ -307,7 +307,7 @@ function KanbanCard({ entry, config, onAction, isDisabled }) {
             {entry.remarks}
           </div>
         )}
-        {entry.status === "Served" && !entry.remarks && (
+        {entry.status === "Done Toga" && !entry.remarks && (
           <div style={{ color: "#475569", fontSize: 11, fontStyle: "italic" }}>No remarks</div>
         )}
       </div>
@@ -489,14 +489,14 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     } else {
       // Handle "Call Again" action - moves from Entered back to Arrived
       if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Arrived");
+        await updateQueueEntryStatus(priorityId, "Arrived_Toga");
         await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
         refreshQueue();
         return;
       }
       // Handle "Serving" action - moves from Entered to Now Serving
       if (actionType === "serving") {
-        await updateQueueEntryStatus(priorityId, "Now Serving");
+        await updateQueueEntryStatus(priorityId, "Now Serving_Toga");
         await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
         refreshQueue();
         return;
@@ -510,22 +510,22 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   const handleRemarksDone = async (remarks) => {
     if (!remarksTarget) return;
     await logActivity(user?.id, user?.username, "Remarks", "Toga", `Added remarks for ${remarksTarget.student_name} (${remarksTarget.priority_number}): ${remarks}`);
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Served");
+    await updateQueueEntryStatus(remarksTarget.priority_number, "Done Toga");
     refreshQueue();
     setRemarksTarget(null);
   };
 
   const handleRemarksSkip = async () => {
     if (!remarksTarget) return;
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Served");
+    await updateQueueEntryStatus(remarksTarget.priority_number, "Done Toga");
     refreshQueue();
     setRemarksTarget(null);
   };
 
   // Derived display data
-  const nowServingList = queue.filter((e) => e.status === "Now Serving");
-  const enteredList    = queue.filter((e) => e.status === "Entered");
-  const arrivedList    = queue.filter((e) => e.status === "Arrived");
+  const nowServingList = queue.filter((e) => e.status === "Now Serving_Toga");
+  const arrivedList    = queue.filter((e) => e.status === "Arrived_Toga");
+  const enteredList    = queue.filter((e) => e.status === "Entered_Toga");
   const waitingCount   = arrivedList.length + enteredList.length;
 
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
@@ -812,11 +812,11 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               gap: 8,
             }} className="kanban-top-row">
               {COLUMN_CONFIG.map((config) => {
-                if (config.key === "Now Serving" || config.key === "Served") return null;
+                if (config.key === "Now Serving_Toga" || config.key === "Done Toga") return null;
                 
                 const entries = queue.filter((e) => e.status === (config.sourceStatus || config.key));
-                const nowServingCount = queue.filter((e) => e.status === "Now Serving").length;
-                const isEnteredButtonDisabled = config.key === "Entered" && nowServingCount > 0;
+                const nowServingCount = queue.filter((e) => e.status === "Now Serving_Toga").length;
+                const isEnteredButtonDisabled = config.key === "Entered_Toga" && nowServingCount > 0;
                 
                 return (
                   <div key={config.key}>
@@ -838,7 +838,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               gap: 12,
             }} className="kanban-bottom-row">
               {COLUMN_CONFIG.map((config) => {
-                if (config.key !== "Now Serving" && config.key !== "Served") return null;
+                if (config.key !== "Now Serving_Toga" && config.key !== "Done Toga") return null;
                 
                 const entries = queue.filter((e) => e.status === config.key);
                 
@@ -849,7 +849,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      maxHeight={config.key === "Now Serving" ? "250px" : "550px"}
+                      maxHeight={config.key === "Now Serving_Toga" ? "250px" : "550px"}
                     />
                   </div>
                 );
