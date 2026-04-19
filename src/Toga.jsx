@@ -11,10 +11,10 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done OJT", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
+const STATUS_ORDER = ["Done Glam", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
 
 const STATUS_STYLES = {
-  "Done OJT":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
   Arrived_Toga:   "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
   Entered_Toga:   "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
   "Now Serving_Toga": "bg-green-500/20 text-green-300 border-green-500/30",
@@ -23,9 +23,9 @@ const STATUS_STYLES = {
 
 const COLUMN_CONFIG = [
   {
-    key: "Done OJT",
-    label: "Done OJT",
-    sourceStatus: "Done OJT",
+    key: "Done Glam",
+    label: "Done Glam",
+    sourceStatus: "Done Glam",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
@@ -487,9 +487,9 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     if (config.requiresRemarks) {
       setRemarksTarget(entry);
     } else {
-      // Handle "Call Again" action - moves from Entered back to Arrived
+      // Handle "Call Again" action - keeps in Entered_Toga (stays on Please Enter the Room display)
       if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Arrived_Toga");
+        await updateQueueEntryStatus(priorityId, "Entered_Toga");
         await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
         refreshQueue();
         return;
@@ -785,7 +785,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <span className="text-white text-lg font-bold font-mono leading-tight">{newEntry.priorityNumber}</span>
                   </div>
                   <div>
-                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From OJT Ready for Toga</p>
+                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Glam Ready for Toga</p>
                     <h2 className="text-white text-base font-bold mt-0.5">{newEntry.studentName}</h2>
                     <p className="text-slate-400 text-xs">{newEntry.programCode} — {newEntry.programName}</p>
                   </div>
@@ -806,7 +806,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               </span>
             </div>
 
-            {/* Top Row: Done OJT, Arrived, Entered */}
+            {/* Top Row: Done Glam, Arrived, Entered */}
             <div style={{
               display: "grid",
               gap: 8,

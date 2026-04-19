@@ -11,10 +11,10 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done Glam", "Arrived_OJT", "Entered_OJT", "Now Serving_OJT", "Done OJT"];
+const STATUS_ORDER = ["Done Toga", "Arrived_OJT", "Entered_OJT", "Now Serving_OJT", "Done OJT"];
 
 const STATUS_STYLES = {
-  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  "Done Toga":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
   Arrived_OJT:    "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
   Entered_OJT:    "bg-purple-500/20 text-purple-300 border-purple-500/30",
   "Now Serving_OJT": "bg-green-500/20 text-green-300 border-green-500/30",
@@ -23,9 +23,9 @@ const STATUS_STYLES = {
 
 const COLUMN_CONFIG = [
   {
-    key: "Done Glam",
-    label: "Done Glam",
-    sourceStatus: "Done Glam",
+    key: "Done Toga",
+    label: "Done Toga",
+    sourceStatus: "Done Toga",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
@@ -491,9 +491,9 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
     if (config.requiresRemarks) {
       setRemarksTarget(entry);
     } else {
-      // Handle "Call Again" action - moves from Entered back to Arrived
+      // Handle "Call Again" action - keeps in Entered_OJT (stays on Please Enter the Room display)
       if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Arrived_OJT");
+        await updateQueueEntryStatus(priorityId, "Entered_OJT");
         await logActivity(user?.id, user?.username, "Call Again", "OJT", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
         refreshQueue();
         return;
@@ -789,7 +789,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                     <span className="text-white text-lg font-bold font-mono leading-tight">{newEntry.priorityNumber}</span>
                   </div>
                   <div>
-                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Glam Ready for OJT</p>
+                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Toga Ready for OJT</p>
                     <h2 className="text-white text-base font-bold mt-0.5">{newEntry.studentName}</h2>
                     <p className="text-slate-400 text-xs">{newEntry.programCode} — {newEntry.programName}</p>
                   </div>
