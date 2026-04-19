@@ -536,7 +536,10 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   }, [queue, selectedEnteredStudent]);
 
   // Derived display data
-  const nowServingList = queue.filter((e) => e.status === \"Now Serving\");\n  const enteredList    = queue.filter((e) => e.status === \"Entered\");\n  const arrivedList    = queue.filter((e) => e.status === \"Arrived\");\n  const waitingCount   = arrivedList.length + enteredList.length;
+  const nowServingList = queue.filter((e) => e.status === "Now Serving");
+  const enteredList    = queue.filter((e) => e.status === "Entered");
+  const arrivedList    = queue.filter((e) => e.status === "Arrived");
+  const waitingCount   = arrivedList.length + enteredList.length;
 
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
 
