@@ -532,7 +532,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   const arrivedList    = queue.filter((e) => e.status === "Arrived_OJT");
   const waitingCount   = arrivedList.length + enteredList.length;
 
-  const navPages = ["Registration", "Glam", "OJT", "Toga"];
+  const navPages = ["Registration", "Glam", "Toga", "OJT"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">

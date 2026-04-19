@@ -221,7 +221,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
         {/* Row 2: Nav Links */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between">
           <div className="hidden md:flex items-center gap-1 overflow-x-auto">
-            {["Registration", "Glam", "OJT", "Toga"].map((page) => (
+            {["Registration", "Glam", "Toga", "OJT"].map((page) => (
               <NavLink
                 key={page}
                 label={page}
@@ -254,7 +254,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-white/10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex flex-col gap-1">
-              {["Registration", "Glam", "OJT", "Toga"].map((page) => (
+              {["Registration", "Glam", "Toga", "OJT"].map((page) => (
                 <button
                   key={page}
                   className="text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-white/10 hover:text-white"

@@ -691,7 +691,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
     }
   };
 
-  const navPages = ["Registration", "Glam", "OJT", "Toga"];
+  const navPages = ["Registration", "Glam", "Toga", "OJT"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
