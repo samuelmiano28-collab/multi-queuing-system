@@ -319,7 +319,7 @@ function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
 
-  // Initial load + refresh when a new entry is registered
+  // Reload when a new registration happens
   useEffect(() => {
     const loadQueue = async () => {
       const queueData = await getQueue();
@@ -328,7 +328,7 @@ function QueueSummary({ refreshKey, students, programs }) {
     loadQueue();
   }, [refreshKey]);
 
-  // Poll every 2s so status changes from Glam/OJT/Toga reflect here automatically
+  // Poll every 2 s so status changes from Glam/OJT/Toga reflect here live
   useEffect(() => {
     const interval = setInterval(async () => {
       const queueData = await getQueue();
@@ -594,13 +594,11 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
       const sequence = incrementDailyCount();
       const priorityNumber = generatePriorityNumber(sequence);
       const entry = await addToQueue({
-        studentId: student.id,
-        studentName: student.name,
-        programId: program.id,
-        programCode: program.code,
-        programName: program.name,
-        registeredBy: user?.name ?? user?.username ?? "Staff",
-        priorityNumber,
+        studentName:      student.name,
+        programCode:      program.code,
+        programName:      program.name,
+        priorityNumber,          // formatted label "W17-Su-001"
+        prioritySequence: sequence, // raw integer for DB
       });
       setLoading(false);
       setSuccess(entry);

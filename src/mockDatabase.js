@@ -1,166 +1,304 @@
 // ─── mockDatabase.js ──────────────────────────────────────────────────────────
-// Live database layer for the Multi-Queuing System.
-// Students and programs are fetched from Supabase.
-// Queue and activity log are kept in-memory per session.
+// Live database layer — all data persisted in Supabase so every account
+// and every device sees the same queue and activity log in real time.
 
 import { supabase } from "./lib/supabase";
-import { MOCK_STUDENTS, MOCK_PROGRAMS } from "./mockData";
-
-export async function getStudents() {
-  return MOCK_STUDENTS;
-}
-
-export async function getPrograms() {
-  return MOCK_PROGRAMS;
-}
-
-// ─── In-memory state ──────────────────────────────────────────────────────────
-
-let _queue      = [];
-let _activities = [];
-const _counters = { Glam: 0, OJT: 0, Toga: 0 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function _pad(n)  { return String(n).padStart(3, "0"); }
-function _now()   { return new Date().toISOString(); }
-
 function _todayDate() {
-  // Returns "YYYY-MM-DD" in local time
-  const d = new Date();
+  const d    = new Date();
   const yyyy = d.getFullYear();
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Normalises a raw mqs_queue row into the shape the UI expects.
+ *
+ * DB schema:
+ *   priority_number  integer   — raw sequence counter (1, 2, 3 …)
+ *   priority_label   text      — formatted label "W17-Su-001"  (add this column)
+ *   student_name     varchar
+ *   program          varchar   — stored as "CODE — Full Name"
+ *   status           varchar
+ *   remarks          text
+ */
+function _normaliseQueueRow(row) {
+  const parts       = (row.program || "").split(" — ");
+  const programCode = parts[0]?.trim() || "";
+  const programName = parts.slice(1).join(" — ").trim() || "";
+  const priorityLabel = row.priority_label || String(row.priority_number);
+
+  return {
+    // snake_case (DB-style)
+    id:              row.id,
+    priority_number: priorityLabel,
+    student_name:    row.student_name,
+    program:         row.program || "",
+    programCode,
+    programName,
+    status:          row.status,
+    remarks:         row.remarks || "",
+    timestamp:       row.timestamp || row.created_at,
+
+    // camelCase aliases used throughout the UI
+    priorityNumber:  priorityLabel,
+    studentName:     row.student_name,
+  };
+}
+
+/**
+ * Normalises a raw mqs_activities row.
+ * DB column is "page" — exposed as both `page` and `module`.
+ */
+function _normaliseActivityRow(row) {
+  return {
+    id:        row.id,
+    user_id:   row.user_id,
+    username:  row.username,
+    action:    row.action,
+    page:      row.page,
+    module:    row.page,
+    details:   row.details || "",
+    timestamp: row.timestamp || row.created_at,
+  };
+}
+
 // ─── Students ─────────────────────────────────────────────────────────────────
 
 /**
- * Returns students scheduled for TODAY only (from pictorial_schedule).
- * The Registration dropdown will only show students whose pictorial date is today.
- * @returns {Promise<Array<{ id: string, name: string, course: string }>>}
+ * Returns students scheduled for TODAY from pictorial_schedule.
+ * Shape: { id, name, course }
  */
+export async function getStudents() {
+  const today = _todayDate();
 
+  const { data, error } = await supabase
+    .from("pictorial_schedule")
+    .select("id, last_name, first_name, middle_initial, course, student_id")
+    .eq("schedule_date", today)
+    .order("last_name", { ascending: true });
+
+  if (error) {
+    console.error("getStudents error:", error.message);
+    return [];
+  }
+
+  return (data || []).map((s) => ({
+    id:     s.id,
+    name:   [s.last_name, s.first_name, s.middle_initial]
+              .filter(Boolean)
+              .join(", ")
+              .replace(/,\s*$/, ""),
+    course: s.course || "",
+  }));
+}
 
 // ─── Programs ─────────────────────────────────────────────────────────────────
 
 /**
- * Returns all programs from mqs_programs table.
- * @returns {Promise<Array<{ id: number, code: string, name: string }>>}
+ * Returns all programs from mqs_programs.
+ * Shape: { id, code, name }
  */
+export async function getPrograms() {
+  const { data, error } = await supabase
+    .from("mqs_programs")
+    .select("id, code, name")
+    .order("code", { ascending: true });
 
+  if (error) {
+    console.error("getPrograms error:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
 
 // ─── Queue ────────────────────────────────────────────────────────────────────
 
 /**
- * Returns the current in-memory queue.
- * @param {string} [serviceType] - "Glam" | "OJT" | "Toga"
- * @returns {Promise<Array>}
+ * Returns the full queue from Supabase, ordered by priority number.
+ * All pages poll this every 2 s so they always see each other's changes.
  */
-export async function getQueue(serviceType) {
-  if (serviceType) {
-    return _queue.filter((e) => e.service_type === serviceType);
+export async function getQueue() {
+  const { data, error } = await supabase
+    .from("mqs_queue")
+    .select("*")
+    .order("priority_number", { ascending: true });
+
+  if (error) {
+    console.error("getQueue error:", error.message);
+    return [];
   }
-  return [..._queue];
+
+  return (data || []).map(_normaliseQueueRow);
 }
 
 /**
- * Adds a new entry to the queue.
+ * Adds a new entry to mqs_queue.
+ *
+ * priorityNumber   — formatted label string, e.g. "W17-Su-001"
+ * prioritySequence — raw integer for the priority_number column
+ *
+ * IMPORTANT: Run this once in Supabase SQL editor to add the label column
+ * if it doesn't exist yet:
+ *
+ *   ALTER TABLE mqs_queue ADD COLUMN IF NOT EXISTS priority_label text;
  */
 export async function addToQueue({
-  studentId,
   studentName,
-  programId,
   programCode,
   programName,
-  registeredBy,
-  priorityNumber,
+  priorityNumber,    // formatted string "W17-Su-001"
+  prioritySequence,  // integer sequence number
 }) {
-  const entry = {
-    id:              `Q-${Date.now()}`,
-    priority_number: priorityNumber,
-    priorityNumber,
-    student_id:      studentId,
-    student_name:    studentName,
-    studentName,
-    program_id:      programId,
-    program:         `${programCode} — ${programName}`,
-    programCode,
-    programName,
-    registered_by:   registeredBy || "Staff",
-    status:          "Registered",
-    registered_at:   _now(),
-    remarks:         "",
-  };
+  const programString =
+    programCode && programName
+      ? `${programCode} — ${programName}`
+      : programCode || programName || "";
 
-  _queue.push(entry);
-  return { ...entry };
+  const { data, error } = await supabase
+    .from("mqs_queue")
+    .insert({
+      priority_number: prioritySequence,
+      priority_label:  priorityNumber,
+      student_name:    studentName,
+      program:         programString,
+      status:          "Registered",
+      remarks:         "",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("addToQueue error:", error.message);
+    throw error;
+  }
+
+  return _normaliseQueueRow(data);
 }
 
 /**
- * Updates the status of a queue entry by priority number.
+ * Updates the status (and optionally remarks) of a queue entry.
+ * Looks up by priority_label first, then falls back to integer priority_number.
  */
-export async function updateQueueEntryStatus(priorityNumber, newStatus) {
-  const idx = _queue.findIndex(
-    (e) => e.priority_number === priorityNumber || e.priorityNumber === priorityNumber
-  );
-  if (idx === -1) return null;
+export async function updateQueueEntryStatus(priorityNumber, newStatus, remarks) {
+  const updatePayload = { status: newStatus };
+  if (remarks !== undefined) updatePayload.remarks = remarks;
 
-  _queue[idx] = { ..._queue[idx], status: newStatus, updated_at: _now() };
-  return { ..._queue[idx] };
+  // Try text label match first
+  let { data, error } = await supabase
+    .from("mqs_queue")
+    .update(updatePayload)
+    .eq("priority_label", String(priorityNumber))
+    .select()
+    .single();
+
+  // Fall back to integer match
+  if (!data) {
+    const asInt = parseInt(priorityNumber, 10);
+    if (!isNaN(asInt)) {
+      ({ data, error } = await supabase
+        .from("mqs_queue")
+        .update(updatePayload)
+        .eq("priority_number", asInt)
+        .select()
+        .single());
+    }
+  }
+
+  if (error) {
+    console.error("updateQueueEntryStatus error:", error.message);
+    return null;
+  }
+
+  return data ? _normaliseQueueRow(data) : null;
 }
 
 /**
- * Removes an entry from the queue entirely.
+ * Removes a queue entry entirely.
  */
 export async function removeFromQueue(priorityNumber) {
-  const before = _queue.length;
-  _queue = _queue.filter(
-    (e) => e.priority_number !== priorityNumber && e.priorityNumber !== priorityNumber
-  );
-  return _queue.length < before;
+  let { error } = await supabase
+    .from("mqs_queue")
+    .delete()
+    .eq("priority_label", String(priorityNumber));
+
+  if (error) {
+    const asInt = parseInt(priorityNumber, 10);
+    if (!isNaN(asInt)) {
+      ({ error } = await supabase
+        .from("mqs_queue")
+        .delete()
+        .eq("priority_number", asInt));
+    }
+  }
+
+  if (error) {
+    console.error("removeFromQueue error:", error.message);
+    return false;
+  }
+  return true;
 }
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
 /**
- * Logs an activity entry to in-memory log.
+ * Inserts an activity log entry into mqs_activities.
+ * Note: the DB column is "page" (matches the schema), not "module".
  */
 export async function logActivity(userId, username, action, module, details) {
-  const activity = {
-    id:        _activities.length + 1,
-    user_id:   userId,
-    username:  username || "Unknown",
-    action:    action   || "Action",
-    module:    module   || "System",
-    page:      module   || "System",   // alias so Profile can use log.page
-    details:   details  || "",
-    timestamp: _now(),
-  };
-  _activities.unshift(activity);
-  return { ...activity };
+  const { data, error } = await supabase
+    .from("mqs_activities")
+    .insert({
+      user_id:  userId,
+      username: username || "Unknown",
+      action:   action   || "Action",
+      page:     module   || "System",
+      details:  details  || "",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("logActivity error:", error.message);
+    return null;
+  }
+
+  return _normaliseActivityRow(data);
 }
 
 /**
- * Returns the activity log, filtered by userId and optional { action, page } filters.
+ * Returns activity logs for a user, with optional { action, page } filters.
  */
 export async function getActivities(userId, filters = {}) {
-  let results = [..._activities];
+  let query = supabase
+    .from("mqs_activities")
+    .select("*")
+    .order("timestamp", { ascending: false });
 
   if (userId !== undefined && userId !== null) {
-    results = results.filter((a) => String(a.user_id) === String(userId));
+    query = query.eq("user_id", userId);
   }
 
-  if (filters && filters.action && filters.action !== "all") {
-    results = results.filter((a) => a.action === filters.action);
+  if (filters?.action && filters.action !== "all") {
+    query = query.eq("action", filters.action);
   }
 
-  if (filters && filters.page && filters.page !== "all") {
-    results = results.filter((a) => a.module === filters.page);
+  if (filters?.page && filters.page !== "all") {
+    query = query.eq("page", filters.page);
   }
 
-  return results;
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("getActivities error:", error.message);
+    return [];
+  }
+
+  return (data || []).map(_normaliseActivityRow);
 }
 
 // ─── Default export ───────────────────────────────────────────────────────────
