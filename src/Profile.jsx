@@ -99,11 +99,11 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
         style={{
           background: active ? "rgba(201,168,76,0.15)" : "none",
           border: active ? "1px solid rgba(201,168,76,0.35)" : "1px solid transparent",
-          borderRadius: 8, padding: "4px 8px",
+          borderRadius: 8, padding: "5px 10px",
           color: active ? "#e2c06a" : "#94a3b8",
-          fontSize: 13, fontWeight: active ? 600 : 500,
+          fontSize: 12, fontWeight: active ? 600 : 500,
           cursor: "pointer", transition: "all 0.2s",
-          whiteSpace: "nowrap",
+          whiteSpace: "nowrap", flexShrink: 0,
         }}
         onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; } }}
         onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "none"; } }}
@@ -133,7 +133,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          Profile
+          <span className="hidden sm:inline">Profile</span>
         </button>
         <button
           onClick={onLogout}
@@ -151,7 +151,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Logout
+          <span className="hidden sm:inline">Logout</span>
         </button>
       </div>
     );
@@ -160,6 +160,11 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
       <style>{`
+        @media (min-width: 480px) { .xs\:block { display: block !important; } .xs\:inline { display: inline !important; } }
+        @media (max-width: 640px) {
+          .activity-table table { font-size: 12px; }
+          .activity-table th:last-child, .activity-table td:last-child { display: none; }
+        }
         .activity-table::-webkit-scrollbar { width: 6px; }
         .activity-table::-webkit-scrollbar-track { background: transparent; }
         .activity-table::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.4); border-radius: 3px; }
@@ -189,61 +194,55 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
 
       {/* Header */}
       <nav className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2 sm:gap-4">
-
-          {/* Logo */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center">
+        {/* Row 1: Logo + Avatar */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             </div>
-            <span className="hidden xs:block text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
+            <span className="text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
           </div>
-
-          {/* Nav Pages */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
-            {["Registration", "Glam", "OJT", "Toga"].map((page) => (
-              <NavLink
-                key={page}
-                label={page}
-                active={false}
-                onClick={() => {
-                  if (page === "Registration") {
-                    onBack();
-                  } else if (page === "Glam") {
-                    onGlamSubmit();
-                  } else if (page === "OJT") {
-                    onOJTSubmit();
-                  } else if (page === "Toga") {
-                    onTogaSubmit();
-                  }
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Right side: Avatar Menu */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-            <AvatarMenu user={user} onLogout={onLogout} />
-          </div>
+          <AvatarMenu user={user} onLogout={onLogout} />
+        </div>
+        {/* Row 2: Nav Links */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center gap-1 overflow-x-auto">
+          {["Registration", "Glam", "OJT", "Toga"].map((page) => (
+            <NavLink
+              key={page}
+              label={page}
+              active={false}
+              onClick={() => {
+                if (page === "Registration") {
+                  onBack();
+                } else if (page === "Glam") {
+                  onGlamSubmit();
+                } else if (page === "OJT") {
+                  onOJTSubmit();
+                } else if (page === "Toga") {
+                  onTogaSubmit();
+                }
+              }}
+            />
+          ))}
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {/* Profile Section */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 mb-6 sm:mb-8 shadow-2xl">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
             {/* Avatar */}
             <div
-              className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center flex-shrink-0"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center flex-shrink-0"
               style={{
                 background:
                   "linear-gradient(135deg, #64748b 0%, #475569 100%)",
               }}
             >
-              <span className="text-white font-bold text-2xl">
+              <span className="text-white font-bold text-xl sm:text-2xl">
                 {user?.name
                   ?.split(" ")
                   .map((n) => n[0])
@@ -255,11 +254,11 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
 
             {/* User Info */}
             <div>
-              <h2 className="text-white text-2xl font-bold">{user?.name}</h2>
+              <h2 className="text-white text-xl sm:text-2xl font-bold">{user?.name}</h2>
               <p className="text-slate-400 text-sm mt-1">
                 @{user?.username} • {user?.role}
               </p>
-              <div className="mt-4 flex gap-6 text-sm">
+              <div className="mt-3 sm:mt-4 flex flex-wrap gap-4 sm:gap-6 text-sm">
                 <div>
                   <span className="text-slate-500">Total Activities</span>
                   <p className="text-slate-200 font-semibold text-lg">
@@ -282,15 +281,15 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
         {/* Activity Logs Section */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
           {/* Section Header */}
-          <div className="px-8 py-6 border-b border-white/10">
-            <h3 className="text-white text-xl font-bold">Activity Logs</h3>
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10">
+            <h3 className="text-white text-lg sm:text-xl font-bold">Activity Logs</h3>
             <p className="text-slate-400 text-sm mt-1">
               Track all your actions across the system
             </p>
           </div>
 
           {/* Filters */}
-          <div className="px-8 py-6 border-b border-white/10 bg-white/5">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 bg-white/5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Action Filter */}
               <div>
@@ -351,7 +350,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto activity-table">
+          <div className="overflow-x-auto activity-table w-full">
             {activities.length === 0 ? (
               <div className="px-8 py-12 text-center">
                 <svg
@@ -370,19 +369,19 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
                 <p className="text-slate-400 text-sm">No activities found</p>
               </div>
             ) : (
-              <table className="w-full">
+              <table className="w-full" style={{ minWidth: 500 }}>
                 <thead className="bg-white/5 sticky top-0">
                   <tr className="border-b border-white/10">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       Timestamp
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       Action
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       Page
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       Details
                     </th>
                   </tr>
@@ -393,10 +392,10 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
                       key={log.id}
                       className="hover:bg-white/5 transition-colors"
                     >
-                      <td className="px-6 py-4 text-sm text-slate-300">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-300">
                         {formatDate(log.timestamp)}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm">
                         <span
                           className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getActionBadgeColor(
                             log.action
@@ -405,10 +404,10 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
                           {log.action}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-400">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-400">
                         {log.page}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-500 max-w-xs truncate">
                         {log.details || "—"}
                       </td>
                     </tr>
@@ -419,8 +418,8 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
           </div>
 
           {/* Summary */}
-          <div className="px-8 py-4 border-t border-white/10 bg-white/5">
-            <p className="text-slate-400 text-sm">
+          <div className="px-4 sm:px-8 py-4 border-t border-white/10 bg-white/5">
+            <p className="text-slate-400 text-xs sm:text-sm">
               Showing {activities.length} of {allActivities.length} total activities
             </p>
           </div>

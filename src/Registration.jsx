@@ -169,8 +169,8 @@ function EditModal({ entry, students, programs, onSave, onClose }) {
           background: "linear-gradient(135deg, #0d1f35 0%, #0a1628 100%)",
           border: "1px solid rgba(99,179,237,0.25)",
           borderRadius: 20,
-          padding: "32px 36px",
-          width: 420,
+          padding: "24px 20px",
+          width: "calc(100% - 32px)", maxWidth: 420,
           boxShadow: "0 0 60px rgba(201,168,76,0.15), 0 24px 64px rgba(0,0,0,0.5)",
           transform: visible ? "scale(1) translateY(0)" : "scale(0.92) translateY(16px)",
           opacity: visible ? 1 : 0,
@@ -289,7 +289,7 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
-        Profile
+        <span className="hidden sm:inline">Profile</span>
       </button>
       <button
         onClick={onLogout}
@@ -307,7 +307,7 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
-        Logout
+        <span className="hidden sm:inline">Logout</span>
       </button>
     </div>
   );
@@ -360,11 +360,11 @@ function QueueSummary({ refreshKey, students, programs }) {
         background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
         borderRadius: 16, overflow: "hidden",
         display: "flex", flexDirection: "column",
-        height: 340, // fixed height
+        height: 340, overflowX: "auto", // fixed height
       }}>
         {/* Sticky header */}
         <div style={{ flexShrink: 0 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
               <col style={{ width: "22%" }} />
               <col style={{ width: "26%" }} />
@@ -396,8 +396,13 @@ function QueueSummary({ refreshKey, students, programs }) {
             .custom-scroll::-webkit-scrollbar-track { background: transparent; }
             .custom-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
             .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.65); }
+            @media (min-width: 480px) { .xs\:block { display: block !important; } }
+            @media (max-width: 640px) {
+              .reg-table th:nth-child(4), .reg-table td:nth-child(4) { display: none; }
+              .reg-table th:nth-child(5), .reg-table td:nth-child(5) { display: none; }
+            }
           `}</style>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
               <col style={{ width: "22%" }} />
               <col style={{ width: "26%" }} />
@@ -490,12 +495,12 @@ function NavLink({ label, active, onClick }) {
       onClick={onClick}
       style={{
         background: active ? "rgba(201,168,76,0.15)" : "none",
-        border: active ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
-        borderRadius: 8, padding: "6px 14px",
-        color: active ? "#93c5fd" : "#94a3b8",
-        fontSize: 13, fontWeight: active ? 600 : 500,
+        border: active ? "1px solid rgba(201,168,76,0.35)" : "1px solid transparent",
+        borderRadius: 8, padding: "5px 10px",
+        color: active ? "#e2c06a" : "#94a3b8",
+        fontSize: 12, fontWeight: active ? 600 : 500,
         cursor: "pointer", transition: "all 0.2s",
-        whiteSpace: "nowrap",
+        whiteSpace: "nowrap", flexShrink: 0,
       }}
       onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; } }}
       onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "none"; } }}
@@ -622,45 +627,40 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
 
       {/* Navbar */}
       <nav className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2 sm:gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center">
+        {/* Row 1: Logo + Avatar */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <span className="hidden xs:block text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
+            <span className="text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
           </div>
-
-          {/* Nav Pages */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
-            {navPages.map((page) => (
-              <NavLink
-                key={page}
-                label={page}
-                active={activePage === page}
-                onClick={() => {
-                  if (page === "Glam") {
-                    onSubmit(null);
-                  } else if (page === "Toga") {
-                    onTogaSubmit();
-                  } else if (page === "OJT") {
-                    onOJTSubmit();
-                  } else if (page === "Profile") {
-                    onProfileSubmit();
-                  } else {
-                    setActivePage(page);
-                  }
-                }}
-              />
-            ))}
-          </div>
-
-          {/* User Avatar Dropdown */}
-          <div style={{ flexShrink: 0 }}>
-            <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
-          </div>
+          <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
+        </div>
+        {/* Row 2: Nav Links */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center gap-1 overflow-x-auto">
+          {navPages.map((page) => (
+            <NavLink
+              key={page}
+              label={page}
+              active={activePage === page}
+              onClick={() => {
+                if (page === "Glam") {
+                  onSubmit(null);
+                } else if (page === "Toga") {
+                  onTogaSubmit();
+                } else if (page === "OJT") {
+                  onOJTSubmit();
+                } else if (page === "Profile") {
+                  onProfileSubmit();
+                } else {
+                  setActivePage(page);
+                }
+              }}
+            />
+          ))}
         </div>
       </nav>
 
@@ -672,7 +672,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
             <span className="w-2 h-2 rounded-full bg-[#e2c06a] animate-pulse inline-block" />
             Student Registration
           </div>
-          <h1 className="text-3xl font-bold text-white">Queue Registration</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Queue Registration</h1>
           <p className="text-slate-400 mt-1">Register a student and assign a priority number for {activePage === "Registration" ? "Glam Studio" : activePage}.</p>
         </div>
 
@@ -689,7 +689,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
             )}
 
             {/* Form Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-2xl">
               <div className="space-y-6">
 
                 {/* Priority Number Preview */}

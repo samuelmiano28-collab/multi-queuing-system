@@ -29,6 +29,7 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
+      <style>{`@media (min-width:480px){.xs\:block{display:block!important}}`}</style>
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#1a2f6e] opacity-20 rounded-full blur-3xl" />
@@ -50,7 +51,7 @@ export default function Login({ onLogin }) {
       <div className="relative z-10 w-full max-w-md mx-4 px-2 sm:px-0">
         {/* Header badge */}
         <div className="flex justify-center mb-6">
-          <div className="flex items-center gap-2 bg-[#c9a84c]/10 border border-[#c9a84c]/30 text-[#e2c06a] text-xs font-semibold px-4 py-2 rounded-full uppercase tracking-widest">
+          <div className="flex items-center gap-2 bg-[#c9a84c]/10 border border-[#c9a84c]/30 text-[#e2c06a] text-xs font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full uppercase tracking-widest">
             <span className="w-2 h-2 rounded-full bg-[#e2c06a] animate-pulse inline-block" />
             Ad Astra Queuing System
           </div>

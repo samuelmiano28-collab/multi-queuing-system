@@ -111,8 +111,8 @@ function RemarksModal({ entry, onDone, onSkip }) {
         background: "linear-gradient(135deg,#070d24,#0b1535)",
         border: "1px solid rgba(201,168,76,0.4)",
         borderRadius: 20,
-        padding: "36px 40px",
-        width: 420,
+        padding: "24px 20px",
+        width: "calc(100% - 32px)", maxWidth: 420,
         boxShadow: "0 0 60px rgba(201,168,76,0.15), 0 24px 64px rgba(0,0,0,0.5)",
         transform: visible ? "scale(1) translateY(0)" : "scale(0.9) translateY(-16px)",
         opacity: visible ? 1 : 0,
@@ -209,7 +209,7 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
-        Profile
+        <span className="hidden sm:inline">Profile</span>
       </button>
       <button
         onClick={onLogout}
@@ -227,7 +227,7 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
-        Logout
+        <span className="hidden sm:inline">Logout</span>
       </button>
     </div>
   );
@@ -241,11 +241,11 @@ function NavLink({ label, active, onClick }) {
       style={{
         background: active ? "rgba(201,168,76,0.15)" : "none",
         border: active ? "1px solid rgba(201,168,76,0.35)" : "1px solid transparent",
-        borderRadius: 8, padding: "6px 14px",
+        borderRadius: 8, padding: "5px 10px",
         color: active ? "#e2c06a" : "#94a3b8",
-        fontSize: 13, fontWeight: active ? 600 : 500,
+        fontSize: 12, fontWeight: active ? 600 : 500,
         cursor: "pointer", transition: "all 0.2s",
-        whiteSpace: "nowrap",
+        whiteSpace: "nowrap", flexShrink: 0,
       }}
       onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; } }}
       onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "none"; } }}
@@ -502,11 +502,16 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
       <style>{`
+        @media (min-width: 480px) { .xs\:block { display: block !important; } .xs\:inline { display: inline !important; } }
         /* ── Responsive kanban ── */
         @media (max-width: 640px) {
           .kanban-top-row { grid-template-columns: 1fr !important; }
           .kanban-bottom-row { grid-template-columns: 1fr !important; }
           .kanban-col { height: 300px !important; }
+        }
+        @media (min-width: 641px) {
+          .kanban-top-row { grid-template-columns: repeat(3,1fr) !important; }
+          .kanban-bottom-row { grid-template-columns: repeat(2,1fr) !important; }
         }
         /* ── Scrollbars ── */
         .kanban-scroll::-webkit-scrollbar { width: 5px; }
@@ -542,20 +547,21 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
 
       {/* ── NAVBAR (matches Registration style) ─────────────────────────────── */}
       <nav className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2 sm:gap-4">
-
-          {/* Logo */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center">
+        {/* Row 1: Logo + Avatar */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <span className="hidden xs:block text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
+            <span className="text-white font-bold tracking-tight text-sm whitespace-nowrap">Ad Astra Queuing System</span>
           </div>
-
-          {/* Nav Pages */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
+          <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
+        </div>
+        {/* Row 2: Nav links + Display/Controls toggle */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0">
             {navPages.map((page) => (
               <NavLink
                 key={page}
@@ -577,49 +583,28 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               />
             ))}
           </div>
-
-          {/* Right side: Toggle + Avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-
-            {/* Display / Controls toggle */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 2,
-              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12, padding: 4,
-            }}>
-              <button
-                onClick={() => setActiveTab("display")}
-                style={{
-                  padding: "5px 14px", borderRadius: 8,
-                  background: activeTab === "display" ? "linear-gradient(135deg,#a855f7,#7c3aed)" : "none",
-                  border: "none",
-                  color: activeTab === "display" ? "#fff" : "#94a3b8",
-                  fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  boxShadow: activeTab === "display" ? "0 2px 8px rgba(168,85,247,0.4)" : "none",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Display Screen
-              </button>
-              <button
-                onClick={() => setActiveTab("controls")}
-                style={{
-                  padding: "5px 14px", borderRadius: 8,
-                  background: activeTab === "controls" ? "linear-gradient(135deg,#a855f7,#7c3aed)" : "none",
-                  border: "none",
-                  color: activeTab === "controls" ? "#fff" : "#94a3b8",
-                  fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  boxShadow: activeTab === "controls" ? "0 2px 8px rgba(168,85,247,0.4)" : "none",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Controls
-              </button>
-            </div>
-
-            <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
+          {/* Display / Controls toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 4, flexShrink: 0 }}>
+            <button
+              onClick={() => setActiveTab("display")}
+              style={{
+                padding: "4px 10px", borderRadius: 8,
+                background: activeTab === "display" ? "linear-gradient(135deg,#1a2f6e,#c9a84c)" : "none",
+                border: "none", color: activeTab === "display" ? "#fff" : "#94a3b8",
+                fontSize: 11, fontWeight: 600, cursor: "pointer",
+                boxShadow: activeTab === "display" ? "0 2px 8px rgba(201,168,76,0.3)" : "none",
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}>Display</button>
+            <button
+              onClick={() => setActiveTab("controls")}
+              style={{
+                padding: "4px 10px", borderRadius: 8,
+                background: activeTab === "controls" ? "linear-gradient(135deg,#1a2f6e,#c9a84c)" : "none",
+                border: "none", color: activeTab === "controls" ? "#fff" : "#94a3b8",
+                fontSize: 11, fontWeight: 600, cursor: "pointer",
+                boxShadow: activeTab === "controls" ? "0 2px 8px rgba(201,168,76,0.3)" : "none",
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}>Controls</button>
           </div>
         </div>
       </nav>
@@ -711,8 +696,8 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
 
               {/* PREPARE + NOW SERVING row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-8 py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.25em] mb-4">Prepare</p>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Prepare</p>
                   {prepareEntry ? (
                     <>
                       <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{prepareEntry.studentName}</p>
@@ -722,8 +707,8 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                     <p className="text-slate-600 text-sm">No one preparing</p>
                   )}
                 </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-8 py-8 flex flex-col items-center justify-center text-center">
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.25em] mb-4">Now Serving</p>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">Now Serving</p>
                   {nowServing ? (
                     <>
                       <p className="text-white font-extrabold" style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)", lineHeight: 1.2, marginBottom: "12px" }}>{nowServing.student_name}</p>
@@ -737,7 +722,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
 
               {/* Newly arrived from Toga highlight */}
               {newEntry && (
-                <div className="p-5 bg-gradient-to-r from-[#1a2f6e]/30 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl flex items-center gap-5">
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1a2f6e]/30 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex flex-col items-center justify-center shadow-lg shadow-[#c9a84c]/30 flex-shrink-0">
                     <span className="text-white/70 text-xs leading-none">No.</span>
                     <span className="text-white text-lg font-bold font-mono leading-tight">{newEntry.priorityNumber}</span>
@@ -767,10 +752,8 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
             {/* Top Row: Done Toga, Arrived, Entered */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
               gap: 8,
-            }} className="kanban-top-row" style={{
-            }}>
+            }} className="kanban-top-row">
               {COLUMN_CONFIG.map((config) => {
                 if (config.key === "Now Serving" || config.key === "Served") return null;
                 
@@ -795,9 +778,8 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
             {/* Bottom Row: Now Serving, Served (equal half width, full width combined) */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
               gap: 12,
-            }}>
+            }} className="kanban-bottom-row">
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving" && config.key !== "Served") return null;
                 
