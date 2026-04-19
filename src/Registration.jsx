@@ -319,6 +319,10 @@ function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterProgram, setFilterProgram] = useState("All");
+
   // Reload when a new registration happens
   useEffect(() => {
     const loadQueue = async () => {
@@ -328,7 +332,7 @@ function QueueSummary({ refreshKey, students, programs }) {
     loadQueue();
   }, [refreshKey]);
 
-  // Poll every 2 s so status changes from Glam/OJT/Toga reflect here live
+  // Poll every 2 s so status changes reflect here live
   useEffect(() => {
     const interval = setInterval(async () => {
       const queueData = await getQueue();
@@ -353,7 +357,7 @@ function QueueSummary({ refreshKey, students, programs }) {
   const handleExportExcel = () => {
     if (queue.length === 0) return;
     const headers = ["Priority #", "Student Name", "Program Code", "Program Name", "Status"];
-    const rows = queue.map((e) => [
+    const rows = filteredQueue.map((e) => [
       e.priorityNumber ?? "",
       e.studentName ?? "",
       e.programCode ?? "",
@@ -373,18 +377,50 @@ function QueueSummary({ refreshKey, students, programs }) {
     URL.revokeObjectURL(url);
   };
 
-  if (queue.length === 0) return (
-    <div style={{ textAlign: "center", padding: "48px 24px", color: "#475569" }}>
-      <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: "0 auto 12px", display: "block", opacity: 0.4 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-      <p style={{ fontSize: 13 }}>No queue entries yet</p>
-    </div>
-  );
+  // Derived filter values
+  const uniqueStatuses = ["All", ...Array.from(new Set(queue.map((e) => e.status).filter(Boolean)))];
+  const uniquePrograms = ["All", ...Array.from(new Set(queue.map((e) => e.programCode).filter(Boolean)))];
+
+  const filteredQueue = queue.filter((e) => {
+    const matchSearch = searchText === "" ||
+      (e.studentName ?? "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (e.priorityNumber ?? "").toLowerCase().includes(searchText.toLowerCase());
+    const matchStatus = filterStatus === "All" || e.status === filterStatus;
+    const matchProgram = filterProgram === "All" || e.programCode === filterProgram;
+    return matchSearch && matchStatus && matchProgram;
+  });
+
+  const statusColors = {
+    Waiting:   { bg: "rgba(234,179,8,0.12)",  color: "#fbbf24", border: "rgba(234,179,8,0.3)" },
+    Serving:   { bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+    Done:      { bg: "rgba(34,197,94,0.12)",  color: "#4ade80", border: "rgba(34,197,94,0.3)" },
+    Cancelled: { bg: "rgba(239,68,68,0.12)",  color: "#f87171", border: "rgba(239,68,68,0.3)" },
+  };
+  const getStatusStyle = (status) => statusColors[status] ?? { bg: "rgba(234,179,8,0.1)", color: "#fbbf24", border: "rgba(234,179,8,0.25)" };
+
+  const inputBase = {
+    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 8, color: "#e2e8f0", fontSize: 11, outline: "none",
+    transition: "border-color 0.15s",
+  };
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+      <style>{`
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.65); }
+        .qs-input:focus { border-color: rgba(201,168,76,0.55) !important; }
+        @media (min-width: 480px) { .xs\\:block { display: block !important; } }
+        @media (max-width: 640px) {
+          .reg-table th:nth-child(4), .reg-table td:nth-child(4) { display: none; }
+          .reg-table th:nth-child(5), .reg-table td:nth-child(5) { display: none; }
+        }
+      `}</style>
+
+      {/* ── Header row ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <svg width="16" height="16" fill="none" stroke="#e2c06a" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
@@ -392,9 +428,9 @@ function QueueSummary({ refreshKey, students, programs }) {
         <span style={{
           background: "rgba(34,211,238,0.15)", color: "#e2c06a",
           borderRadius: 20, padding: "1px 9px", fontSize: 11, fontWeight: 700,
-        }}>{queue.length}</span>
+        }}>{filteredQueue.length}{filteredQueue.length !== queue.length ? ` / ${queue.length}` : ""}</span>
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ marginLeft: "auto" }}>
           <button
             onClick={handleExportExcel}
             disabled={queue.length === 0}
@@ -414,16 +450,75 @@ function QueueSummary({ refreshKey, students, programs }) {
             </svg>
             Export
           </button>
-
         </div>
       </div>
 
-      {/* Fixed-height scrollable table container */}
+      {/* ── Filter bar ── */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+        {/* Search */}
+        <div style={{ position: "relative", flex: "1 1 130px", minWidth: 120 }}>
+          <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
+            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+            </svg>
+          </span>
+          <input
+            className="qs-input"
+            type="text"
+            placeholder="Search name or priority…"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ ...inputBase, width: "100%", padding: "5px 8px 5px 24px", boxSizing: "border-box" }}
+          />
+        </div>
+
+        {/* Status filter */}
+        <select
+          className="qs-input"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          style={{ ...inputBase, padding: "5px 8px", cursor: "pointer", flex: "0 0 auto" }}
+        >
+          {uniqueStatuses.map((s) => (
+            <option key={s} value={s} style={{ background: "#0f172a" }}>{s === "All" ? "All Statuses" : s}</option>
+          ))}
+        </select>
+
+        {/* Program filter */}
+        <select
+          className="qs-input"
+          value={filterProgram}
+          onChange={(e) => setFilterProgram(e.target.value)}
+          style={{ ...inputBase, padding: "5px 8px", cursor: "pointer", flex: "0 0 auto" }}
+        >
+          {uniquePrograms.map((p) => (
+            <option key={p} value={p} style={{ background: "#0f172a" }}>{p === "All" ? "All Programs" : p}</option>
+          ))}
+        </select>
+
+        {/* Clear filters */}
+        {(searchText || filterStatus !== "All" || filterProgram !== "All") && (
+          <button
+            onClick={() => { setSearchText(""); setFilterStatus("All"); setFilterProgram("All"); }}
+            style={{
+              ...inputBase, padding: "5px 8px", cursor: "pointer", fontSize: 10,
+              color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 3,
+            }}
+          >
+            <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* ── Table ── */}
       <div style={{
         background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
         borderRadius: 16, overflow: "hidden",
         display: "flex", flexDirection: "column",
-        height: 340, overflowX: "auto", // fixed height
+        height: 340, overflowX: "auto",
       }}>
         {/* Sticky header */}
         <div style={{ flexShrink: 0 }}>
@@ -433,7 +528,7 @@ function QueueSummary({ refreshKey, students, programs }) {
               <col style={{ width: "26%" }} />
               <col style={{ width: "18%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "22%" }} />
+              <col style={{ width: "16%" }} />
             </colgroup>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
@@ -451,109 +546,109 @@ function QueueSummary({ refreshKey, students, programs }) {
         </div>
 
         {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}
-          className="custom-scroll"
-        >
-          <style>{`
-            .custom-scroll::-webkit-scrollbar { width: 6px; }
-            .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-            .custom-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
-            .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.65); }
-            @media (min-width: 480px) { .xs\:block { display: block !important; } }
-            @media (max-width: 640px) {
-              .reg-table th:nth-child(4), .reg-table td:nth-child(4) { display: none; }
-              .reg-table th:nth-child(5), .reg-table td:nth-child(5) { display: none; }
-            }
-          `}</style>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }} className="custom-scroll">
           <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
               <col style={{ width: "22%" }} />
               <col style={{ width: "26%" }} />
               <col style={{ width: "18%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "22%" }} />
+              <col style={{ width: "16%" }} />
             </colgroup>
             <tbody>
-              {queue.map((entry, i) => (
-                <tr
-                  key={entry.priorityNumber}
-                  style={{
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
-                    transition: "background 0.15s",
-                    background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.07)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)"; }}
-                >
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "3px 8px", borderRadius: 7,
-                      background: "rgba(59,130,246,0.18)", color: "#93c5fd",
-                      fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {entry.priorityNumber}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 12px", color: "#e2e8f0", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.studentName}
-                  </td>
-                  <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 12 }}>
-                    {entry.programCode}
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "3px 8px", borderRadius: 20,
-                      background: "rgba(234,179,8,0.1)", color: "#fbbf24",
-                      border: "1px solid rgba(234,179,8,0.25)",
-                      fontSize: 10, fontWeight: 600,
-                    }}>
-                      {entry.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <div style={{ display: "flex", gap: 5 }}>
-                      <button
-                        onClick={() => setEditEntry(entry)}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                          padding: "4px 8px", borderRadius: 7,
-                          background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.25)",
-                          color: "#7dd3fc", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                          transition: "background 0.15s",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.22)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.1)"; }}
-                      >
-                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry)}
-                        disabled={deletingId === entry.priorityNumber}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                          padding: "4px 8px", borderRadius: 7,
-                          background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)",
-                          color: "#f87171", fontSize: 11, fontWeight: 600,
-                          cursor: deletingId === entry.priorityNumber ? "not-allowed" : "pointer",
-                          opacity: deletingId === entry.priorityNumber ? 0.5 : 1,
-                          transition: "background 0.15s",
-                        }}
-                        onMouseEnter={(e) => { if (deletingId !== entry.priorityNumber) e.currentTarget.style.background = "rgba(239,68,68,0.22)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
-                      >
-                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        {deletingId === entry.priorityNumber ? "…" : "Del"}
-                      </button>
-                    </div>
+              {filteredQueue.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "36px 16px", color: "#475569" }}>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: "0 auto 8px", display: "block", opacity: 0.35 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p style={{ fontSize: 12, margin: 0 }}>{queue.length === 0 ? "No queue entries yet" : "No entries match your filters"}</p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredQueue.map((entry, i) => {
+                  const sc = getStatusStyle(entry.status);
+                  return (
+                    <tr
+                      key={entry.priorityNumber}
+                      style={{
+                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        transition: "background 0.15s",
+                        background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.07)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)"; }}
+                    >
+                      <td style={{ padding: "10px 12px" }}>
+                        <span style={{
+                          padding: "3px 8px", borderRadius: 7,
+                          background: "rgba(59,130,246,0.18)", color: "#93c5fd",
+                          fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {entry.priorityNumber}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "#e2e8f0", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {entry.studentName}
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 12 }}>
+                        {entry.programCode}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <span style={{
+                          padding: "3px 8px", borderRadius: 20,
+                          background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
+                          fontSize: 10, fontWeight: 600,
+                        }}>
+                          {entry.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <button
+                            onClick={() => setEditEntry(entry)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "4px 8px", borderRadius: 7,
+                              background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.25)",
+                              color: "#7dd3fc", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                              transition: "background 0.15s",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.22)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.1)"; }}
+                          >
+                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry)}
+                            disabled={deletingId === entry.priorityNumber}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "4px 8px", borderRadius: 7,
+                              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)",
+                              color: "#f87171", fontSize: 11, fontWeight: 600,
+                              cursor: deletingId === entry.priorityNumber ? "not-allowed" : "pointer",
+                              opacity: deletingId === entry.priorityNumber ? 0.5 : 1,
+                              transition: "background 0.15s",
+                            }}
+                            onMouseEnter={(e) => { if (deletingId !== entry.priorityNumber) e.currentTarget.style.background = "rgba(239,68,68,0.22)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
+                          >
+                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            {deletingId === entry.priorityNumber ? "…" : "Del"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
