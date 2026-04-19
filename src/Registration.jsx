@@ -319,6 +319,7 @@ function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
 
+  // Initial load + refresh when a new entry is registered
   useEffect(() => {
     const loadQueue = async () => {
       const queueData = await getQueue();
@@ -326,6 +327,15 @@ function QueueSummary({ refreshKey, students, programs }) {
     };
     loadQueue();
   }, [refreshKey]);
+
+  // Poll every 2s so status changes from Glam/OJT/Toga reflect here automatically
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const queueData = await getQueue();
+      setQueue(queueData);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSaveEdit = async (updated) => {
     const newQueue = queue.map((e) => (e.priority_number === updated.priority_number ? updated : e));

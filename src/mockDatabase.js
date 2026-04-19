@@ -134,6 +134,7 @@ export async function logActivity(userId, username, action, module, details) {
     username:  username || "Unknown",
     action:    action   || "Action",
     module:    module   || "System",
+    page:      module   || "System",   // alias so Profile can use log.page
     details:   details  || "",
     timestamp: _now(),
   };
@@ -142,13 +143,24 @@ export async function logActivity(userId, username, action, module, details) {
 }
 
 /**
- * Returns the activity log, optionally filtered by userId.
+ * Returns the activity log, filtered by userId and optional { action, page } filters.
  */
-export async function getActivities(userId) {
+export async function getActivities(userId, filters = {}) {
+  let results = [..._activities];
+
   if (userId !== undefined && userId !== null) {
-    return _activities.filter((a) => String(a.user_id) === String(userId));
+    results = results.filter((a) => String(a.user_id) === String(userId));
   }
-  return [..._activities];
+
+  if (filters && filters.action && filters.action !== "all") {
+    results = results.filter((a) => a.action === filters.action);
+  }
+
+  if (filters && filters.page && filters.page !== "all") {
+    results = results.filter((a) => a.module === filters.page);
+  }
+
+  return results;
 }
 
 // ─── Default export ───────────────────────────────────────────────────────────

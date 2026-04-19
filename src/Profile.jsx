@@ -10,6 +10,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Load filtered activities whenever filters change
   useEffect(() => {
     if (user?.id) {
       const loadActivities = async () => {
@@ -20,6 +21,7 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
     }
   }, [user, filters]);
 
+  // Load all (unfiltered) activities for stats and unique filter options
   useEffect(() => {
     if (user?.id) {
       const loadAllActivities = async () => {
@@ -27,6 +29,15 @@ export default function Profile({ user, onBack, onLogout, onGlamSubmit, onTogaSu
         setAllActivities(allLogs);
       };
       loadAllActivities();
+      // Poll every 3s to pick up new activity logs from other pages
+      const interval = setInterval(async () => {
+        const allLogs = await getActivities(user.id, {});
+        setAllActivities(allLogs);
+        // Also refresh filtered view
+        const filtered = await getActivities(user.id, filters);
+        setActivities(filtered);
+      }, 3000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 

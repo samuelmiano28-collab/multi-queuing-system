@@ -806,12 +806,9 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
 
             {/* Kanban Board - Custom Layout */}
             {/* Top Row: Registered, Arrived, Entered */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 8,
-            }} className="kanban-top-row"
-              style={{ gridTemplateColumns: "1fr" }}
+            <div
+              className="kanban-top-row"
+              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}
             >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key === "Now Serving_Glam" || config.key === "Done Glam") return null;
@@ -827,18 +824,18 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={isEnteredButtonDisabled}
-                      maxHeight="550px"
+                      maxHeight="520px"
                     />
                   </div>
                 );
               })}
             </div>
 
-            {/* Bottom Row: Now Serving, Served (equal half width, full width combined) */}
-            <div style={{
-              display: "grid",
-              gap: 12,
-            }} className="kanban-bottom-row">
+            {/* Bottom Row: Now Serving, Done Glam (equal half width, full width combined) */}
+            <div
+              className="kanban-bottom-row"
+              style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
+            >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving_Glam" && config.key !== "Done Glam") return null;
                 
@@ -851,7 +848,7 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                        maxHeight={config.key === "Now Serving_Glam" ? "250px" : "550px"}
+                      maxHeight={config.key === "Now Serving_Glam" ? "260px" : "520px"}
                     />
                   </div>
                 );
