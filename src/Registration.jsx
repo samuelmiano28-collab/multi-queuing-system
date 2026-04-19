@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getStudents, getPrograms, addToQueue, getQueue, clearQueue, removeFromQueue } from "./mockDatabase";
+import { getStudents, getPrograms, addToQueue, getQueue, removeFromQueue } from "./mockDatabase";
 
 // ─── Priority Number Generator ──────────────────────────────────────────────
 
@@ -319,17 +319,6 @@ function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [clearing, setClearing] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
-
-  const handleClearQueue = async () => {
-    setClearing(true);
-    await clearQueue();
-    setQueue([]);
-    setClearing(false);
-    setConfirmClear(false);
-  };
-
   // Reload when a new registration happens
   useEffect(() => {
     const loadQueue = async () => {
@@ -361,6 +350,29 @@ function QueueSummary({ refreshKey, students, programs }) {
     setDeletingId(null);
   };
 
+  const handleExportExcel = () => {
+    if (queue.length === 0) return;
+    const headers = ["Priority #", "Student Name", "Program Code", "Program Name", "Status"];
+    const rows = queue.map((e) => [
+      e.priorityNumber ?? "",
+      e.studentName ?? "",
+      e.programCode ?? "",
+      e.programName ?? "",
+      e.status ?? "",
+    ]);
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `queue_${today}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (queue.length === 0) return (
     <div style={{ textAlign: "center", padding: "48px 24px", color: "#475569" }}>
       <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: "0 auto 12px", display: "block", opacity: 0.4 }}>
@@ -383,42 +395,26 @@ function QueueSummary({ refreshKey, students, programs }) {
         }}>{queue.length}</span>
 
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          {confirmClear ? (
-            <>
-              <span style={{ color: "#f87171", fontSize: 11, fontWeight: 600 }}>Are you sure?</span>
-              <button
-                onClick={handleClearQueue}
-                disabled={clearing}
-                style={{
-                  padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer",
-                  background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.5)", color: "#f87171",
-                }}
-              >{clearing ? "Clearing…" : "Yes, Clear"}</button>
-              <button
-                onClick={() => setConfirmClear(false)}
-                style={{
-                  padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#94a3b8",
-                }}
-              >Cancel</button>
-            </>
-          ) : (
-            <button
-              onClick={() => setConfirmClear(true)}
-              disabled={queue.length === 0}
-              style={{
-                padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: queue.length === 0 ? "not-allowed" : "pointer",
-                background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171",
-                opacity: queue.length === 0 ? 0.4 : 1, transition: "all 0.15s",
-                display: "inline-flex", alignItems: "center", gap: 4,
-              }}
-            >
-              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Clear Queue
-            </button>
-          )}
+          <button
+            onClick={handleExportExcel}
+            disabled={queue.length === 0}
+            title="Export current queue to Excel"
+            style={{
+              padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+              cursor: queue.length === 0 ? "not-allowed" : "pointer",
+              background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80",
+              opacity: queue.length === 0 ? 0.4 : 1, transition: "all 0.15s",
+              display: "inline-flex", alignItems: "center", gap: 4,
+            }}
+            onMouseEnter={(e) => { if (queue.length > 0) { e.currentTarget.style.background = "rgba(34,197,94,0.2)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.55)"; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(34,197,94,0.1)"; e.currentTarget.style.borderColor = "rgba(34,197,94,0.3)"; }}
+          >
+            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Export
+          </button>
+
         </div>
       </div>
 
