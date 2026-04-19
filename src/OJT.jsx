@@ -11,10 +11,10 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done Toga", "Arrived_OJT", "Entered_OJT", "Now Serving_OJT", "Done OJT"];
+const STATUS_ORDER = ["Done Glam", "Arrived_OJT", "Entered_OJT", "Now Serving_OJT", "Done OJT"];
 
 const STATUS_STYLES = {
-  "Done Toga":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
   Arrived_OJT:    "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
   Entered_OJT:    "bg-purple-500/20 text-purple-300 border-purple-500/30",
   "Now Serving_OJT": "bg-green-500/20 text-green-300 border-green-500/30",
@@ -23,9 +23,9 @@ const STATUS_STYLES = {
 
 const COLUMN_CONFIG = [
   {
-    key: "Done Toga",
-    label: "Done Toga",
-    sourceStatus: "Done Toga",
+    key: "Done Glam",
+    label: "Done Glam",
+    sourceStatus: "Done Glam",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
@@ -781,7 +781,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                 )}
               </div>
 
-              {/* Newly arrived from Toga highlight */}
+              {/* Newly arrived from Glam highlight */}
               {newEntry && (
                 <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1a2f6e]/30 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex flex-col items-center justify-center shadow-lg shadow-[#c9a84c]/30 flex-shrink-0">
@@ -789,7 +789,7 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
                     <span className="text-white text-lg font-bold font-mono leading-tight">{newEntry.priorityNumber}</span>
                   </div>
                   <div>
-                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Toga Ready for OJT</p>
+                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Glam Ready for OJT</p>
                     <h2 className="text-white text-base font-bold mt-0.5">{newEntry.studentName}</h2>
                     <p className="text-slate-400 text-xs">{newEntry.programCode} — {newEntry.programName}</p>
                   </div>

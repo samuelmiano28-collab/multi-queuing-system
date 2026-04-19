@@ -11,10 +11,10 @@ function getSundayWeekNumber(date) {
 }
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
-const STATUS_ORDER = ["Done Glam", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
+const STATUS_ORDER = ["Done OJT", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
 
 const STATUS_STYLES = {
-  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  "Done OJT":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
   Arrived_Toga:   "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
   Entered_Toga:   "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
   "Now Serving_Toga": "bg-green-500/20 text-green-300 border-green-500/30",
@@ -23,9 +23,9 @@ const STATUS_STYLES = {
 
 const COLUMN_CONFIG = [
   {
-    key: "Done Glam",
-    label: "Done Glam",
-    sourceStatus: "Done Glam",
+    key: "Done OJT",
+    label: "Done OJT",
+    sourceStatus: "Done OJT",
     color: "#94a3b8",
     accent: "rgba(148,163,184,0.15)",
     border: "rgba(148,163,184,0.25)",
@@ -777,7 +777,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 )}
               </div>
 
-              {/* Newly arrived from Glam highlight */}
+              {/* Newly arrived from OJT highlight */}
               {newEntry && (
                 <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1a2f6e]/30 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex flex-col items-center justify-center shadow-lg shadow-orange-500/30 flex-shrink-0">
@@ -785,7 +785,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <span className="text-white text-lg font-bold font-mono leading-tight">{newEntry.priorityNumber}</span>
                   </div>
                   <div>
-                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From Glam Ready for Toga</p>
+                    <p className="text-[#e2c06a] text-xs font-semibold uppercase tracking-widest">✓ From OJT Ready for Toga</p>
                     <h2 className="text-white text-base font-bold mt-0.5">{newEntry.studentName}</h2>
                     <p className="text-slate-400 text-xs">{newEntry.programCode} — {newEntry.programName}</p>
                   </div>
@@ -806,7 +806,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               </span>
             </div>
 
-            {/* Top Row: Done Glam, Arrived, Entered */}
+            {/* Top Row: Done OJT, Arrived, Entered */}
             <div style={{
               display: "grid",
               gap: 8,
