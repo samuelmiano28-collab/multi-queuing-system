@@ -581,6 +581,14 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
   const displayRef = useRef(null);
   const pollingRef = useRef(null);
 
+  // ── Permanent Done OJT record ─────────────────────────────────────────────
+  const [doneOJTRecord, setDoneOJTRecord] = useState(() => {
+    try {
+      const stored = localStorage.getItem("doneOJTRecord");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
   useEffect(() => {
     console.log("OJT component received onProfileSubmit:", onProfileSubmit);
   }, [onProfileSubmit]);
@@ -599,6 +607,20 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
     pollingRef.current = setInterval(refreshQueue, 2000);
     return () => clearInterval(pollingRef.current);
   }, []);
+
+  // Sync: whenever queue updates, add any "Done OJT" students not yet in record
+  useEffect(() => {
+    const doneInQueue = queue.filter((e) => e.status === "Done OJT");
+    if (doneInQueue.length === 0) return;
+    setDoneOJTRecord((prev) => {
+      const existingIds = new Set(prev.map((e) => e.priority_number || e.priorityNumber));
+      const newOnes = doneInQueue.filter((e) => !existingIds.has(e.priority_number || e.priorityNumber));
+      if (newOnes.length === 0) return prev;
+      const updated = [...prev, ...newOnes];
+      try { localStorage.setItem("doneOJTRecord", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, [queue]);
 
   // Fullscreen handler
   const toggleFullscreen = () => {
@@ -1099,7 +1121,9 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving_OJT" && config.key !== "Done OJT") return null;
 
-                const entries = queue.filter((e) => e.status === config.key);
+                const entries = config.key === "Done OJT"
+                  ? doneOJTRecord
+                  : queue.filter((e) => e.status === config.key);
 
                 return (
                   <div key={config.key}>

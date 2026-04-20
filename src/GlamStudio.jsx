@@ -580,10 +580,32 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
   const displayRef = useRef(null);
   const pollingRef = useRef(null);
 
+  // ── Permanent Done Glam record ────────────────────────────────────────────
+  const [doneGlamRecord, setDoneGlamRecord] = useState(() => {
+    try {
+      const stored = localStorage.getItem("doneGlamRecord");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
   const refreshQueue = async () => {
     const qData = await getQueue();
     setQueue(qData);
   };
+
+  // Sync: whenever queue updates, add any "Done Glam" students not yet in record
+  useEffect(() => {
+    const doneInQueue = queue.filter((e) => e.status === "Done Glam");
+    if (doneInQueue.length === 0) return;
+    setDoneGlamRecord((prev) => {
+      const existingIds = new Set(prev.map((e) => e.priorityNumber || e.priority_number));
+      const newOnes = doneInQueue.filter((e) => !existingIds.has(e.priorityNumber || e.priority_number));
+      if (newOnes.length === 0) return prev;
+      const updated = [...prev, ...newOnes];
+      try { localStorage.setItem("doneGlamRecord", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, [queue]);
 
   useEffect(() => { 
     refreshQueue(); 
@@ -1096,7 +1118,9 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving_Glam" && config.key !== "Done Glam") return null;
 
-                const entries = queue.filter((e) => e.status === config.key);
+                const entries = config.key === "Done Glam"
+                  ? doneGlamRecord
+                  : queue.filter((e) => e.status === config.key);
 
                 return (
                   <div key={config.key}>

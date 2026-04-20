@@ -582,6 +582,14 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   const displayRef = useRef(null);
   const pollingRef = useRef(null);
 
+  // ── Permanent Done Toga record ────────────────────────────────────────────
+  const [doneTogaRecord, setDoneTogaRecord] = useState(() => {
+    try {
+      const stored = localStorage.getItem("doneTogaRecord");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
   const refreshQueue = async () => {
     const qData = await getQueue();
     setQueue(qData);
@@ -594,6 +602,20 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     pollingRef.current = setInterval(refreshQueue, 2000);
     return () => clearInterval(pollingRef.current);
   }, []);
+
+  // Sync: whenever queue updates, add any "Done Toga" students not yet in record
+  useEffect(() => {
+    const doneInQueue = queue.filter((e) => e.status === "Done Toga");
+    if (doneInQueue.length === 0) return;
+    setDoneTogaRecord((prev) => {
+      const existingIds = new Set(prev.map((e) => e.priority_number || e.priorityNumber));
+      const newOnes = doneInQueue.filter((e) => !existingIds.has(e.priority_number || e.priorityNumber));
+      if (newOnes.length === 0) return prev;
+      const updated = [...prev, ...newOnes];
+      try { localStorage.setItem("doneTogaRecord", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, [queue]);
 
   // Fullscreen handler
   const toggleFullscreen = () => {
@@ -1098,7 +1120,9 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
             >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving_Toga" && config.key !== "Done Toga") return null;
-                const entries = queue.filter((e) => e.status === config.key);
+                const entries = config.key === "Done Toga"
+                  ? doneTogaRecord
+                  : queue.filter((e) => e.status === config.key);
                 return (
                   <div key={config.key}>
                     <KanbanColumn
