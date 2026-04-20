@@ -14,11 +14,11 @@ function getSundayWeekNumber(date) {
 const STATUS_ORDER = ["Done Glam", "Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
 
 const STATUS_STYLES = {
-  "Done Glam":    "bg-slate-500/20 text-slate-300 border-slate-500/30",
-  Arrived_Toga:   "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
-  Entered_Toga:   "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
+  "Done Glam":        "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  Arrived_Toga:       "bg-blue-500/20 text-[#e2c06a] border-blue-500/30",
+  Entered_Toga:       "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
   "Now Serving_Toga": "bg-green-500/20 text-green-300 border-green-500/30",
-  "Done Toga":    "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
+  "Done Toga":        "bg-[#c9a84c]/20 text-[#e2c06a] border-[#c9a84c]/30",
 };
 
 const COLUMN_CONFIG = [
@@ -118,7 +118,6 @@ function RemarksModal({ entry, onDone, onSkip }) {
         opacity: visible ? 1 : 0,
         transition: "transform 0.35s cubic-bezier(0.34,1.36,0.64,1), opacity 0.3s ease",
       }}>
-        {/* Icon */}
         <div style={{
           width: 48, height: 48, borderRadius: "50%",
           background: "linear-gradient(135deg,#c9a84c,#1a2f6e)",
@@ -148,8 +147,7 @@ function RemarksModal({ entry, onDone, onSkip }) {
             background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 12, color: "#fff", fontSize: 13, outline: "none",
             resize: "none", fontFamily: "inherit", lineHeight: 1.6,
-            boxSizing: "border-box",
-            transition: "border-color 0.2s",
+            boxSizing: "border-box", transition: "border-color 0.2s",
           }}
           onFocus={(e) => { e.target.style.borderColor = "rgba(249,115,22,0.5)"; }}
           onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
@@ -256,9 +254,9 @@ function NavLink({ label, active, onClick }) {
 }
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
-function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) {
+function KanbanCard({ entry, config, onAction, isDisabled }) {
   const isEnteredStatus = config.key === "Entered_Toga";
-  
+
   return (
     <div style={{
       background: "rgba(255,255,255,0.04)",
@@ -271,7 +269,6 @@ function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) 
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.13)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
     >
-      {/* Left side content */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
         {/* Priority badge + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -312,8 +309,9 @@ function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) 
         )}
       </div>
 
-      {/* Action button(s) (right side) */}
+      {/* Action buttons */}
       {isEnteredStatus ? (
+        // Entered column: Call Again + Serving (Serving is NEVER disabled — multiple allowed)
         <div style={{ display: "flex", gap: 6, width: "100%", justifyContent: "space-between" }}>
           <button
             onClick={() => onAction(entry, "callAgain")}
@@ -334,22 +332,20 @@ function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) 
             Call Again
           </button>
           <button
-            onClick={() => !isServingDisabled && onAction(entry, "serving")}
-            disabled={isServingDisabled}
-            title={isServingDisabled ? "Someone is already being served" : "Move to Now Serving"}
+            onClick={() => onAction(entry, "serving")}
+            title="Move to Now Serving"
             style={{
               flex: 1, padding: "7px 10px",
-              background: isServingDisabled ? "rgba(148,163,184,0.3)" : "linear-gradient(135deg,#10b981,#059669)",
+              background: "linear-gradient(135deg,#10b981,#059669)",
               border: "none", borderRadius: 8,
-              color: isServingDisabled ? "#64748b" : "#fff", fontSize: 10, fontWeight: 700,
-              cursor: isServingDisabled ? "not-allowed" : "pointer", letterSpacing: "0.04em",
-              boxShadow: isServingDisabled ? "none" : "0 4px 12px rgba(16,185,129,0.35)",
+              color: "#fff", fontSize: 10, fontWeight: 700,
+              cursor: "pointer", letterSpacing: "0.04em",
+              boxShadow: "0 4px 12px rgba(16,185,129,0.35)",
               transition: "opacity 0.15s, transform 0.1s",
               whiteSpace: "nowrap",
-              opacity: isServingDisabled ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!isServingDisabled) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
-            onMouseLeave={(e) => { if (!isServingDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
           >
             Serving
           </button>
@@ -380,7 +376,7 @@ function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) 
 }
 
 // ─── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ config, entries, onAction, isDisabled, isServingDisabled, maxHeight = "550px" }) {
+function KanbanColumn({ config, entries, onAction, isDisabled, maxHeight = "550px" }) {
   return (
     <div style={{
       background: config.accent,
@@ -414,22 +410,26 @@ function KanbanColumn({ config, entries, onAction, isDisabled, isServingDisabled
       </div>
 
       {/* Cards */}
-      <div style={{
-        flex: 1, overflowY: "auto", padding: "10px 10px",
-        display: "flex", flexDirection: "column", gap: 8,
-      }}
+      <div
+        style={{
+          flex: 1, overflowY: "auto", padding: "10px 10px",
+          display: "flex", flexDirection: "column", gap: 8,
+        }}
         className="kanban-scroll"
       >
         {entries.length === 0 ? (
-          <div style={{
-            textAlign: "center", padding: "24px 12px",
-            color: "#334155", fontSize: 12, fontStyle: "italic",
-          }}>
+          <div style={{ textAlign: "center", padding: "24px 12px", color: "#334155", fontSize: 12, fontStyle: "italic" }}>
             Empty
           </div>
         ) : (
           entries.map((entry) => (
-            <KanbanCard key={entry.priorityNumber} entry={entry} config={config} onAction={onAction} isDisabled={isDisabled} isServingDisabled={isServingDisabled} />
+            <KanbanCard
+              key={entry.priorityNumber}
+              entry={entry}
+              config={config}
+              onAction={onAction}
+              isDisabled={isDisabled}
+            />
           ))
         )}
       </div>
@@ -453,9 +453,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     setQueue(qData);
   };
 
-  useEffect(() => { 
-    refreshQueue(); 
-  }, [newEntry]);
+  useEffect(() => { refreshQueue(); }, [newEntry]);
 
   useEffect(() => {
     refreshQueue();
@@ -482,52 +480,55 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
 
   const handleAction = async (entry, config, actionType = null) => {
     const priorityId = entry.priority_number || entry.priorityNumber;
+
     if (config.requiresRemarks) {
       setRemarksTarget(entry);
-    } else {
-      // Handle "Call Again" action - keeps in Entered_Toga (stays on Please Enter the Room display)
-      if (actionType === "callAgain") {
-        await updateQueueEntryStatus(priorityId, "Entered_Toga");
-        await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
-        refreshQueue();
-        return;
-      }
-      // Handle "Serving" action - moves from Entered to Now Serving
-      if (actionType === "serving") {
-        await updateQueueEntryStatus(priorityId, "Now Serving_Toga");
-        await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
-        refreshQueue();
-        return;
-      }
-      await updateQueueEntryStatus(priorityId, config.nextStatus);
-      await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): ${config.btnLabel}`);
-      refreshQueue();
+      return;
     }
+
+    if (actionType === "callAgain") {
+      await updateQueueEntryStatus(priorityId, "Entered_Toga");
+      await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
+      refreshQueue();
+      return;
+    }
+
+    if (actionType === "serving") {
+      // FIX: No cap on simultaneous serving — just move to Now Serving
+      await updateQueueEntryStatus(priorityId, "Now Serving_Toga");
+      await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
+      refreshQueue();
+      return;
+    }
+
+    await updateQueueEntryStatus(priorityId, config.nextStatus);
+    await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): ${config.btnLabel}`);
+    refreshQueue();
   };
 
   const handleRemarksDone = async (remarks) => {
     if (!remarksTarget) return;
-    await logActivity(user?.id, user?.username, "Remarks", "Toga", `Added remarks for ${remarksTarget.student_name} (${remarksTarget.priority_number}): ${remarks}`);
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Done Toga");
+    const priorityId = remarksTarget.priority_number || remarksTarget.priorityNumber;
+    await logActivity(user?.id, user?.username, "Remarks", "Toga", `Added remarks for ${remarksTarget.student_name || remarksTarget.studentName} (${priorityId}): ${remarks}`);
+    await updateQueueEntryStatus(priorityId, "Done Toga", remarks);
     refreshQueue();
     setRemarksTarget(null);
   };
 
   const handleRemarksSkip = async () => {
     if (!remarksTarget) return;
-    await updateQueueEntryStatus(remarksTarget.priority_number, "Done Toga");
+    const priorityId = remarksTarget.priority_number || remarksTarget.priorityNumber;
+    await updateQueueEntryStatus(priorityId, "Done Toga");
     refreshQueue();
     setRemarksTarget(null);
   };
 
-  // Derived display data
+  // Derived lists
   const nowServingList = queue.filter((e) => e.status === "Now Serving_Toga");
   const arrivedList    = queue.filter((e) => e.status === "Arrived_Toga");
   const enteredList    = queue.filter((e) => e.status === "Entered_Toga");
-  const waitingCount   = arrivedList.length + enteredList.length;
-  // ── Enter Room display queue ───────────────────────────────────────────────
-  // Shows 1 student at a time. If multiple enter simultaneously, cycles 3s each.
-  // Stays on last student until next "Enter Room" click.
+
+  // ── Enter Room display — 1 student at a time, cycles on queue ─────────────
   const [displayedEntered, setDisplayedEntered] = useState(null);
   const enterQueueRef  = useRef([]);
   const cycleTimerRef  = useRef(null);
@@ -566,14 +567,12 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     return () => { if (cycleTimerRef.current) clearInterval(cycleTimerRef.current); };
   }, []);
 
-
   const navPages = ["Registration", "Glam", "OJT", "Toga"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#04081a] via-[#0b1230] to-[#04081a] relative overflow-hidden">
       <style>{`
         @media (min-width: 480px) { .xs\:block { display: block !important; } .xs\:inline { display: inline !important; } }
-        /* ── Responsive kanban ── */
         @media (max-width: 640px) {
           .kanban-top-row { grid-template-columns: 1fr !important; }
           .kanban-bottom-row { grid-template-columns: 1fr !important; }
@@ -583,7 +582,6 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
           .kanban-top-row { grid-template-columns: repeat(3,1fr) !important; }
           .kanban-bottom-row { grid-template-columns: repeat(2,1fr) !important; }
         }
-        /* ── Scrollbars ── */
         .kanban-scroll::-webkit-scrollbar { width: 5px; }
         .kanban-scroll::-webkit-scrollbar-track { background: transparent; }
         .kanban-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.4); border-radius: 4px; }
@@ -615,9 +613,8 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
         />
       )}
 
-      {/* ── NAVBAR (matches Registration style) ─────────────────────────────── */}
+      {/* ── NAVBAR ────────────────────────────────────────────────────────── */}
       <nav className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        {/* Row 1: Logo + Avatar */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center flex-shrink-0">
@@ -629,7 +626,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
           </div>
           <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
         </div>
-        {/* Row 2: Nav links + Display/Controls toggle */}
+
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between gap-2">
           <div className="hidden md:flex items-center gap-1 overflow-x-auto flex-1 min-w-0">
             {navPages.map((page) => (
@@ -638,22 +635,15 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 label={page}
                 active={activePage === page}
                 onClick={() => {
-                  if (page === "Registration") {
-                    onBack();
-                  } else if (page === "Glam") {
-                    onGlamSubmit();
-                  } else if (page === "OJT") {
-                    onOJTSubmit();
-                  } else if (page === "Profile") {
-                    onProfileSubmit();
-                  } else {
-                    setActivePage(page);
-                  }
+                  if (page === "Registration") onBack();
+                  else if (page === "Glam") onGlamSubmit();
+                  else if (page === "OJT") onOJTSubmit();
+                  else if (page === "Profile") onProfileSubmit();
+                  else setActivePage(page);
                 }}
               />
             ))}
           </div>
-          {/* Hamburger Menu for Mobile */}
           <button
             className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -686,7 +676,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               }}>Controls</button>
           </div>
         </div>
-        {/* Mobile Menu */}
+
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-white/10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex flex-col gap-1">
@@ -700,17 +690,11 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                   }`}
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    if (page === "Registration") {
-                      onBack();
-                    } else if (page === "Glam") {
-                      onGlamSubmit();
-                    } else if (page === "OJT") {
-                      onOJTSubmit();
-                    } else if (page === "Profile") {
-                      onProfileSubmit();
-                    } else {
-                      setActivePage(page);
-                    }
+                    if (page === "Registration") onBack();
+                    else if (page === "Glam") onGlamSubmit();
+                    else if (page === "OJT") onOJTSubmit();
+                    else if (page === "Profile") onProfileSubmit();
+                    else setActivePage(page);
                   }}
                 >
                   {page}
@@ -724,7 +708,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
       {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
 
-        {/* ── DISPLAY SCREEN TAB ─────────────────────────────────────────── */}
+        {/* ── DISPLAY TAB ─────────────────────────────────────────────────── */}
         {activeTab === "display" && (
           <div ref={displayRef} style={isFullscreen ? {
             position: "fixed", inset: 0, zIndex: 9999,
@@ -732,7 +716,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             padding: 40,
           } : {}}>
-            {/* Fullscreen button (top right corner) */}
+            {/* Fullscreen button */}
             <div style={{ position: "absolute", top: 20, right: 20, zIndex: 100 }}>
               <button
                 onClick={toggleFullscreen}
@@ -758,6 +742,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 )}
               </button>
             </div>
+
             <div className="flex flex-col gap-6" style={{ width: "100%" }}>
               {/* Header label */}
               <div className="text-center">
@@ -767,7 +752,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 </span>
               </div>
 
-              {/* PLEASE ENTER THE ROOM — 1 student at a time */}
+              {/* PLEASE ENTER THE ROOM */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-8 py-6 shadow-2xl">
                 <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.25em] mb-4 text-center">Please Enter the Room</p>
                 {displayedEntered ? (
@@ -787,7 +772,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 )}
               </div>
 
-              {/* BOTTOM ROW — Please Prepare (left) | Now Serving (right) */}
+              {/* BOTTOM ROW — Please Prepare | Now Serving */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Please Prepare */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-6 py-5 shadow-xl">
@@ -806,17 +791,45 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                   )}
                 </div>
 
-                {/* Now Serving */}
+                {/* Now Serving — supports MULTIPLE students */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl px-4 sm:px-6 py-5 shadow-xl overflow-hidden">
-                  <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.25em] mb-4 text-center">Now Serving</p>
+                  <p className="text-[#e2c06a] text-xs font-bold uppercase tracking-[0.25em] mb-4 text-center">
+                    Now Serving
+                    {nowServingList.length > 1 && (
+                      <span style={{
+                        marginLeft: 8,
+                        background: "rgba(52,211,153,0.15)", color: "#34d399",
+                        border: "1px solid rgba(52,211,153,0.3)",
+                        borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 700,
+                      }}>
+                        {nowServingList.length}
+                      </span>
+                    )}
+                  </p>
                   {nowServingList.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3" style={{ maxHeight: 260, overflowY: "auto" }}>
                       {nowServingList.map((student, idx) => (
-                        <div key={idx} className="text-center">
-                          <h2 className="text-white font-extrabold leading-tight" style={{ fontSize: "clamp(1.25rem,3vw,2rem)" }}>
+                        <div
+                          key={idx}
+                          className="text-center py-2 rounded-2xl"
+                          style={{
+                            background: nowServingList.length > 1 ? "rgba(52,211,153,0.06)" : "transparent",
+                            border: nowServingList.length > 1 ? "1px solid rgba(52,211,153,0.12)" : "none",
+                            padding: nowServingList.length > 1 ? "10px 14px" : "0",
+                          }}
+                        >
+                          <h2 className="text-white font-extrabold leading-tight" style={{
+                            fontSize: nowServingList.length === 1
+                              ? "clamp(1.25rem,3vw,2rem)"
+                              : "clamp(0.95rem,2vw,1.25rem)",
+                          }}>
                             {student.studentName || student.student_name}
                           </h2>
-                          <p className="text-[#c9a84c] font-bold font-mono mt-1" style={{ fontSize: "clamp(0.85rem,2vw,1.25rem)" }}>
+                          <p className="text-[#c9a84c] font-bold font-mono mt-1" style={{
+                            fontSize: nowServingList.length === 1
+                              ? "clamp(0.85rem,2vw,1.25rem)"
+                              : "clamp(0.75rem,1.5vw,0.95rem)",
+                          }}>
                             {student.priorityNumber || student.priority_number}
                           </p>
                         </div>
@@ -833,7 +846,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                 </div>
               </div>
 
-              {/* Newly arrived from OJT highlight */}
+              {/* Newly arrived from Glam highlight */}
               {newEntry && (
                 <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1a2f6e]/30 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex flex-col items-center justify-center shadow-lg shadow-orange-500/30 flex-shrink-0">
@@ -854,7 +867,6 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
         {/* ── CONTROLS TAB (Kanban) ─────────────────────────────────────────── */}
         {activeTab === "controls" && (
           <div className="flex flex-col gap-6">
-            {/* Header */}
             <div className="text-center">
               <span className="flex items-center justify-center gap-2 bg-[#c9a84c]/10 border border-[#c9a84c]/30 text-[#e2c06a] text-xs font-semibold px-4 py-2 rounded-full uppercase tracking-widest w-fit mx-auto">
                 <span className="w-2 h-2 rounded-full bg-[#e2c06a] animate-pulse inline-block" />
@@ -862,18 +874,14 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               </span>
             </div>
 
-            {/* Top Row: Done OJT, Arrived, Entered */}
+            {/* Top Row: Done Glam, Arrived, Entered */}
             <div
               className="kanban-top-row"
               style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}
             >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key === "Now Serving_Toga" || config.key === "Done Toga") return null;
-
                 const entries = queue.filter((e) => e.status === (config.sourceStatus || config.key));
-                const nowServingCount = queue.filter((e) => e.status === "Now Serving_Toga").length;
-                const isServingDisabled = config.key === "Entered_Toga" && nowServingCount > 0;
-
                 return (
                   <div key={config.key}>
                     <KanbanColumn
@@ -881,7 +889,6 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      isServingDisabled={isServingDisabled}
                       maxHeight="520px"
                     />
                   </div>
@@ -889,16 +896,14 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
               })}
             </div>
 
-            {/* Bottom Row: Now Serving, Done Toga */}
+            {/* Bottom Row: Now Serving (multiple), Done Toga */}
             <div
               className="kanban-bottom-row"
               style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
             >
               {COLUMN_CONFIG.map((config) => {
                 if (config.key !== "Now Serving_Toga" && config.key !== "Done Toga") return null;
-
                 const entries = queue.filter((e) => e.status === config.key);
-
                 return (
                   <div key={config.key}>
                     <KanbanColumn
@@ -906,8 +911,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                       entries={entries}
                       onAction={(entry, actionType) => handleAction(entry, config, actionType)}
                       isDisabled={false}
-                      isServingDisabled={false}
-                      maxHeight={config.key === "Now Serving_Toga" ? "260px" : "520px"}
+                      maxHeight={config.key === "Now Serving_Toga" ? "320px" : "520px"}
                     />
                   </div>
                 );
