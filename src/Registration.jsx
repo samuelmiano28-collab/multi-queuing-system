@@ -322,20 +322,11 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
 
 // ─── Queue Summary with Edit ──────────────────────────────────────────────────
 
-function QueueSummary({ refreshKey, students, programs }) {
-  const [queue, setQueue] = useState([]);
+function QueueSummary({ refreshKey, students, programs, queue, setQueue }) {
   const [editEntry, setEditEntry] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterProgram, setFilterProgram] = useState("All");
-
-  useEffect(() => {
-    const loadQueue = async () => {
-      const queueData = await getQueue();
-      setQueue(queueData);
-    };
-    loadQueue();
-  }, [refreshKey]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -732,6 +723,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState("");
   const [queueRefreshKey, setQueueRefreshKey] = useState(0);
+  const [queue, setQueue] = useState([]);
   const [activePage, setActivePage] = useState("Registration");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registeredStudentNames, setRegisteredStudentNames] = useState(new Set());
@@ -756,6 +748,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
   useEffect(() => {
     const syncQueue = async () => {
       const queueData = await getQueue();
+      setQueue(queueData);
       setRegisteredStudentNames(new Set(queueData.map((e) => e.studentName)));
     };
     syncQueue();
@@ -1250,7 +1243,7 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
 
           {/* RIGHT — Queue Summary Table */}
           <div>
-            <QueueSummary refreshKey={queueRefreshKey} students={students} programs={programs} />
+            <QueueSummary refreshKey={queueRefreshKey} students={students} programs={programs} queue={queue} setQueue={setQueue} />
           </div>
 
         </div>
