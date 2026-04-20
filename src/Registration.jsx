@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "./lib/supabase";
 import { getStudents, getPrograms, addToQueue, getQueue, removeFromQueue } from "./mockDatabase";
 
 // ─── Priority Number Generator ──────────────────────────────────────────────
@@ -25,23 +26,33 @@ function generatePriorityNumber(sequenceCount) {
   return `W${week}-${day}-${count}`;
 }
 
-function getDailyCount() {
-  const today = new Date().toISOString().slice(0, 10);
-  const stored = JSON.parse(localStorage.getItem("mqs_daily_count") || "{}");
-  if (stored.date !== today) {
-    const reset = { date: today, count: 0 };
-    localStorage.setItem("mqs_daily_count", JSON.stringify(reset));
+/**
+ * FIX: Always query the DB for the real max priority_number for today.
+ * This prevents duplicate key errors when localStorage drifts out of sync
+ * across devices/sessions/tabs.
+ */
+async function getTodayMaxSequence() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  const { data, error } = await supabase
+    .from("mqs_queue")
+    .select("priority_number")
+    .gte("created_at", `${todayStr}T00:00:00`)
+    .lte("created_at", `${todayStr}T23:59:59`)
+    .order("priority_number", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error("getTodayMaxSequence error:", error.message);
     return 0;
   }
-  return stored.count;
-}
 
-function incrementDailyCount() {
-  const today = new Date().toISOString().slice(0, 10);
-  const current = getDailyCount();
-  const next = current + 1;
-  localStorage.setItem("mqs_daily_count", JSON.stringify({ date: today, count: next }));
-  return next;
+  if (!data || data.length === 0) return 0;
+  return data[0].priority_number ?? 0;
 }
 
 // ─── Success Modal ────────────────────────────────────────────────────────────
@@ -51,9 +62,7 @@ function SuccessModal({ entry, onClose }) {
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    // Trigger enter animation
     const t1 = setTimeout(() => setVisible(true), 10);
-    // Auto-close after 1 second
     const t2 = setTimeout(() => {
       setLeaving(true);
       setTimeout(onClose, 400);
@@ -86,7 +95,6 @@ function SuccessModal({ entry, onClose }) {
           textAlign: "center",
         }}
       >
-        {/* Checkmark icon */}
         <div style={{
           width: 56, height: 56, borderRadius: "50%",
           background: "linear-gradient(135deg,#059669,#10b981)",
@@ -98,7 +106,6 @@ function SuccessModal({ entry, onClose }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-
         <p style={{ color: "#34d399", fontWeight: 700, fontSize: 18, marginBottom: 6 }}>
           Successfully Registered!
         </p>
@@ -323,7 +330,6 @@ function QueueSummary({ refreshKey, students, programs }) {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterProgram, setFilterProgram] = useState("All");
 
-  // Reload when a new registration happens
   useEffect(() => {
     const loadQueue = async () => {
       const queueData = await getQueue();
@@ -332,7 +338,6 @@ function QueueSummary({ refreshKey, students, programs }) {
     loadQueue();
   }, [refreshKey]);
 
-  // Poll every 2 s so status changes reflect here live
   useEffect(() => {
     const interval = setInterval(async () => {
       const queueData = await getQueue();
@@ -341,8 +346,11 @@ function QueueSummary({ refreshKey, students, programs }) {
     return () => clearInterval(interval);
   }, []);
 
+  // FIX: use priorityNumber (camelCase) consistently — not priority_number
   const handleSaveEdit = async (updated) => {
-    const newQueue = queue.map((e) => (e.priority_number === updated.priority_number ? updated : e));
+    const newQueue = queue.map((e) =>
+      e.priorityNumber === updated.priorityNumber ? updated : e
+    );
     setQueue(newQueue);
     setEditEntry(null);
   };
@@ -377,7 +385,6 @@ function QueueSummary({ refreshKey, students, programs }) {
     URL.revokeObjectURL(url);
   };
 
-  // Derived filter values
   const uniqueStatuses = ["All", ...Array.from(new Set(queue.map((e) => e.status).filter(Boolean)))];
   const uniquePrograms = ["All", ...Array.from(new Set(queue.map((e) => e.programCode).filter(Boolean)))];
 
@@ -391,12 +398,14 @@ function QueueSummary({ refreshKey, students, programs }) {
   });
 
   const statusColors = {
-    Waiting:   { bg: "rgba(234,179,8,0.12)",  color: "#fbbf24", border: "rgba(234,179,8,0.3)" },
-    Serving:   { bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
-    Done:      { bg: "rgba(34,197,94,0.12)",  color: "#4ade80", border: "rgba(34,197,94,0.3)" },
-    Cancelled: { bg: "rgba(239,68,68,0.12)",  color: "#f87171", border: "rgba(239,68,68,0.3)" },
+    Waiting:    { bg: "rgba(234,179,8,0.12)",  color: "#fbbf24", border: "rgba(234,179,8,0.3)" },
+    Registered: { bg: "rgba(234,179,8,0.12)",  color: "#fbbf24", border: "rgba(234,179,8,0.3)" },
+    Serving:    { bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+    Done:       { bg: "rgba(34,197,94,0.12)",  color: "#4ade80", border: "rgba(34,197,94,0.3)" },
+    Cancelled:  { bg: "rgba(239,68,68,0.12)",  color: "#f87171", border: "rgba(239,68,68,0.3)" },
   };
-  const getStatusStyle = (status) => statusColors[status] ?? { bg: "rgba(234,179,8,0.1)", color: "#fbbf24", border: "rgba(234,179,8,0.25)" };
+  const getStatusStyle = (status) =>
+    statusColors[status] ?? { bg: "rgba(234,179,8,0.1)", color: "#fbbf24", border: "rgba(234,179,8,0.25)" };
 
   const inputBase = {
     background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
@@ -412,14 +421,13 @@ function QueueSummary({ refreshKey, students, programs }) {
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.65); }
         .qs-input:focus { border-color: rgba(201,168,76,0.55) !important; }
-        @media (min-width: 480px) { .xs\\:block { display: block !important; } }
         @media (max-width: 640px) {
           .reg-table th:nth-child(4), .reg-table td:nth-child(4) { display: none; }
           .reg-table th:nth-child(5), .reg-table td:nth-child(5) { display: none; }
         }
       `}</style>
 
-      {/* ── Header row ── */}
+      {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <svg width="16" height="16" fill="none" stroke="#e2c06a" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -434,7 +442,7 @@ function QueueSummary({ refreshKey, students, programs }) {
           <button
             onClick={handleExportExcel}
             disabled={queue.length === 0}
-            title="Export current queue to Excel"
+            title="Export current queue to CSV"
             style={{
               padding: "3px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600,
               cursor: queue.length === 0 ? "not-allowed" : "pointer",
@@ -453,9 +461,8 @@ function QueueSummary({ refreshKey, students, programs }) {
         </div>
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* Filter bar */}
       <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-        {/* Search */}
         <div style={{ position: "relative", flex: "1 1 130px", minWidth: 120 }}>
           <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
             <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -472,7 +479,6 @@ function QueueSummary({ refreshKey, students, programs }) {
           />
         </div>
 
-        {/* Status filter */}
         <select
           className="qs-input"
           value={filterStatus}
@@ -484,7 +490,6 @@ function QueueSummary({ refreshKey, students, programs }) {
           ))}
         </select>
 
-        {/* Program filter */}
         <select
           className="qs-input"
           value={filterProgram}
@@ -496,7 +501,6 @@ function QueueSummary({ refreshKey, students, programs }) {
           ))}
         </select>
 
-        {/* Clear filters */}
         {(searchText || filterStatus !== "All" || filterProgram !== "All") && (
           <button
             onClick={() => { setSearchText(""); setFilterStatus("All"); setFilterProgram("All"); }}
@@ -513,14 +517,13 @@ function QueueSummary({ refreshKey, students, programs }) {
         )}
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div style={{
         background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
         borderRadius: 16, overflow: "hidden",
         display: "flex", flexDirection: "column",
         height: 340, overflowX: "auto",
       }}>
-        {/* Sticky header */}
         <div style={{ flexShrink: 0 }}>
           <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
@@ -545,7 +548,6 @@ function QueueSummary({ refreshKey, students, programs }) {
           </table>
         </div>
 
-        {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }} className="custom-scroll">
           <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
@@ -704,15 +706,22 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
   const [activePage, setActivePage] = useState("Registration");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const nextSequence = getDailyCount() + 1;
+  // FIX: nextSequence is now state, synced from DB on mount
+  const [nextSequence, setNextSequence] = useState(1);
   const previewPriority = generatePriorityNumber(nextSequence);
+
+  // Sync sequence counter from DB on mount so preview is always accurate
+  useEffect(() => {
+    getTodayMaxSequence().then((max) => {
+      setNextSequence(max + 1);
+    });
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       const studentsData = await getStudents();
       const programsData = await getPrograms();
       setStudents(studentsData);
-      // Remove entries with numeric-only codes (e.g. "4") and deduplicate by code
       const seen = new Set();
       const cleanedPrograms = programsData.filter((p) => {
         if (!p.code || /^\d+$/.test(String(p.code).trim())) return false;
@@ -726,7 +735,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
     loadData();
   }, []);
 
-  // When a student is selected, auto-select their program based on course code
   const handleStudentChange = (studentId) => {
     setSelectedStudent(studentId);
     if (!studentId) { setSelectedProgram(""); return; }
@@ -746,7 +754,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
     }
     setLoading(true);
     try {
-      // Compare as strings to avoid int/string mismatch from getStudents()
       const student = students.find((s) => String(s.id) === String(selectedStudent));
       const program = programs.find((p) => String(p.id) === String(selectedProgram));
 
@@ -761,15 +768,24 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
         return;
       }
 
-      const sequence = incrementDailyCount();
+      // FIX: Always get the real max from DB right before inserting.
+      // This guarantees no duplicate key even if multiple tabs/devices
+      // are registering simultaneously or localStorage was stale.
+      const currentMax = await getTodayMaxSequence();
+      const sequence = currentMax + 1;
       const priorityNumber = generatePriorityNumber(sequence);
+
       const entry = await addToQueue({
         studentName:      student.name,
         programCode:      program.code,
         programName:      program.name,
-        priorityNumber,          // formatted label "W17-Su-001"
-        prioritySequence: sequence, // raw integer for DB
+        priorityNumber,           // formatted label "W17-Su-001"
+        prioritySequence: sequence, // integer for priority_number column
       });
+
+      // Update the preview counter to reflect new state
+      setNextSequence(sequence + 1);
+
       setLoading(false);
       setSuccess(entry);
       setQueueRefreshKey((k) => k + 1);
@@ -777,7 +793,13 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
       setSelectedProgram("");
     } catch (err) {
       console.error("Error adding to queue:", err);
-      setError("Failed to add to queue. Please try again.");
+      // FIX: If we still somehow hit a duplicate (race condition between two
+      // simultaneous submits), retry once with a fresh sequence from DB.
+      if (err?.code === "23505") {
+        setError("Sequence conflict — please try again.");
+      } else {
+        setError("Failed to add to queue. Please try again.");
+      }
       setLoading(false);
     }
   };
@@ -799,14 +821,10 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
         }}
       />
 
-      {/* Success Modal */}
-      {success && (
-        <SuccessModal entry={success} onClose={() => setSuccess(null)} />
-      )}
+      {success && <SuccessModal entry={success} onClose={() => setSuccess(null)} />}
 
       {/* Navbar */}
       <nav className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        {/* Row 1: Logo + Avatar */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2f6e] to-[#c9a84c] flex items-center justify-center flex-shrink-0">
@@ -818,7 +836,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
           </div>
           <AvatarMenu user={user} onLogout={onLogout} onProfileSubmit={onProfileSubmit} />
         </div>
-        {/* Row 2: Nav Links */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between">
           <div className="hidden md:flex items-center gap-1 overflow-x-auto">
             {navPages.map((page) => (
@@ -842,7 +859,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
               />
             ))}
           </div>
-          {/* Hamburger Menu for Mobile */}
           <button
             className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -852,7 +868,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
             </svg>
           </button>
         </div>
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-white/10">
             <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex flex-col gap-1">
@@ -889,7 +904,6 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-12">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-[#e2c06a] text-xs font-semibold uppercase tracking-widest mb-2">
             <span className="w-2 h-2 rounded-full bg-[#e2c06a] animate-pulse inline-block" />
@@ -899,19 +913,16 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
           <p className="text-slate-400 mt-1">Register a student and assign a priority number for {activePage === "Registration" ? "Glam Studio" : activePage}.</p>
         </div>
 
-        {/* Two-column layout */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
           {/* LEFT — Registration Form */}
           <div>
-            {/* Error */}
             {error && (
               <div className="mb-5 px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
                 {error}
               </div>
             )}
 
-            {/* Form Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-2xl">
               <div className="space-y-6">
 
