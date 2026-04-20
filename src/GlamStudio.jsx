@@ -348,6 +348,7 @@ function NavLink({ label, active, onClick }) {
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) {
   const isEnteredStatus = config.key === "Entered_Glam";
+  const isNowServingStatus = config.key === "Now Serving_Glam";
   
   return (
     <div style={{
@@ -442,6 +443,45 @@ function KanbanCard({ entry, config, onAction, isDisabled, isServingDisabled }) 
             onMouseLeave={(e) => { if (!isServingDisabled) { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; } }}
           >
             Serving
+          </button>
+        </div>
+      ) : isNowServingStatus ? (
+        <div style={{ display: "flex", gap: 6, width: "100%", justifyContent: "space-between" }}>
+          <button
+            onClick={() => onAction(entry, "callback")}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: "linear-gradient(135deg,#f59e0b,#f97316)",
+              border: "none", borderRadius: 8,
+              color: "#fff", fontSize: 10, fontWeight: 700,
+              cursor: "pointer", letterSpacing: "0.04em",
+              boxShadow: "0 4px 12px rgba(245,158,11,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+            title="Send back to Entered"
+          >
+            Callback
+          </button>
+          <button
+            onClick={() => onAction(entry)}
+            style={{
+              flex: 1, padding: "7px 10px",
+              background: "linear-gradient(135deg,#a855f7,#ec4899)",
+              border: "none", borderRadius: 8,
+              color: "#fff", fontSize: 10, fontWeight: 700,
+              cursor: "pointer", letterSpacing: "0.04em",
+              boxShadow: "0 4px 12px rgba(201,168,76,0.35)",
+              transition: "opacity 0.15s, transform 0.1s",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+            title="Complete service and open remarks modal"
+          >
+            Done
           </button>
         </div>
       ) : config.btnLabel && (
@@ -579,6 +619,14 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
     if (actionType === "callAgain") {
       await updateQueueEntryStatus(priorityId, "Arrived_Glam");
       await logActivity(user?.id, user?.username, "Call Again", "Glam", `${entry.studentName || entry.student_name} (${priorityId}) called again`);
+      refreshQueue();
+      return;
+    }
+    
+    // Handle "Callback" action - moves from Now Serving back to Entered
+    if (actionType === "callback") {
+      await updateQueueEntryStatus(priorityId, "Entered_Glam");
+      await logActivity(user?.id, user?.username, "Callback", "Glam", `${entry.studentName || entry.student_name} (${priorityId}) called back to Entered`);
       refreshQueue();
       return;
     }
