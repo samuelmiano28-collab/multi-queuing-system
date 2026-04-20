@@ -79,8 +79,99 @@ const COLUMN_CONFIG = [
   },
 ];
 
+// ─── Confirmation Modal ────────────────────────────────────────────────────────
+function ConfirmationModal({ entry, action, onConfirm, onCancel }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleConfirm = () => {
+    setVisible(false);
+    setTimeout(onConfirm, 300);
+  };
+
+  const handleCancel = () => {
+    setVisible(false);
+    setTimeout(onCancel, 300);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 2000,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: visible ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+      backdropFilter: visible ? "blur(6px)" : "none",
+      transition: "background 0.3s, backdrop-filter 0.3s",
+    }}>
+      <div style={{
+        background: "linear-gradient(135deg,#070d24,#0b1535)",
+        border: "1px solid rgba(99,179,237,0.3)",
+        borderRadius: 20,
+        padding: "24px 20px",
+        width: "calc(100% - 32px)", maxWidth: 400,
+        boxShadow: "0 0 60px rgba(99,179,237,0.15), 0 24px 64px rgba(0,0,0,0.5)",
+        transform: visible ? "scale(1) translateY(0)" : "scale(0.9) translateY(-16px)",
+        opacity: visible ? 1 : 0,
+        transition: "transform 0.35s cubic-bezier(0.34,1.36,0.64,1), opacity 0.3s ease",
+      }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: "50%",
+          background: "linear-gradient(135deg,#3b82f6,#06b6d4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 20px",
+          boxShadow: "0 0 24px rgba(59,130,246,0.4)",
+        }}>
+          <svg width="22" height="22" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 17, textAlign: "center", marginBottom: 12 }}>
+          Confirm Action
+        </h3>
+        <p style={{ color: "#cbd5e1", fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+          Are you sure you want to approve this student?
+        </p>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={handleCancel}
+            style={{
+              flex: 1, padding: "11px 0", borderRadius: 10,
+              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+              color: "#94a3b8", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            style={{
+              flex: 1, padding: "11px 0", borderRadius: 10,
+              background: "linear-gradient(135deg,#3b82f6,#06b6d4)",
+              border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(99,179,237,0.35)",
+              transition: "opacity 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Remarks Modal ─────────────────────────────────────────────────────────────
-function RemarksModal({ entry, onDone, onSkip }) {
+function RemarksModal({ entry, onDone, onCancel }) {
   const [remarks, setRemarks] = useState("");
   const [visible, setVisible] = useState(false);
 
@@ -94,9 +185,9 @@ function RemarksModal({ entry, onDone, onSkip }) {
     setTimeout(() => onDone(remarks.trim()), 300);
   };
 
-  const handleSkip = () => {
+  const handleCancel = () => {
     setVisible(false);
-    setTimeout(() => onSkip(), 300);
+    setTimeout(onCancel, 300);
   };
 
   return (
@@ -155,7 +246,7 @@ function RemarksModal({ entry, onDone, onSkip }) {
 
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
           <button
-            onClick={handleSkip}
+            onClick={handleCancel}
             style={{
               flex: 1, padding: "11px 0", borderRadius: 10,
               background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
@@ -165,7 +256,7 @@ function RemarksModal({ entry, onDone, onSkip }) {
             onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
           >
-            Skip
+            Cancel
           </button>
           <button
             onClick={handleDone}
@@ -443,6 +534,8 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
   const [activeTab, setActiveTab] = useState("display");
   const [activePage, setActivePage] = useState("Toga");
   const [remarksTarget, setRemarksTarget] = useState(null);
+  const [confirmationTarget, setConfirmationTarget] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const displayRef = useRef(null);
@@ -478,32 +571,74 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  const handleAction = async (entry, config, actionType = null) => {
+  const handleAction = async (entry, actionType = null) => {
     const priorityId = entry.priority_number || entry.priorityNumber;
-
-    if (config.requiresRemarks) {
-      setRemarksTarget(entry);
-      return;
-    }
-
+    
+    // Handle "Call Again" action - moves from Entered back to Arrived
     if (actionType === "callAgain") {
-      await updateQueueEntryStatus(priorityId, "Entered_Toga");
+      await updateQueueEntryStatus(priorityId, "Arrived_Toga");
       await logActivity(user?.id, user?.username, "Call Again", "Toga", `${entry.student_name || entry.studentName} (${priorityId}) called again`);
       refreshQueue();
       return;
     }
-
+    
+    // Handle "Serving" action - moves from Entered to Now Serving
     if (actionType === "serving") {
-      // FIX: No cap on simultaneous serving — just move to Now Serving
       await updateQueueEntryStatus(priorityId, "Now Serving_Toga");
       await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
       refreshQueue();
       return;
     }
+    
+    // For normal action (via config), determine next status from entry's current status
+    let nextStatus = null;
+    if (entry.status === "Done Glam") {
+      nextStatus = "Arrived_Toga";
+    } else if (entry.status === "Arrived_Toga") {
+      nextStatus = "Entered_Toga";
+    } else if (entry.status === "Entered_Toga") {
+      nextStatus = "Now Serving_Toga";
+    } else if (entry.status === "Now Serving_Toga") {
+      setRemarksTarget(entry);
+      return;
+    }
+    
+    // Show confirmation for Done Glam→Arrived and Arrived→Entered transitions
+    if ((entry.status === "Done Glam" && nextStatus === "Arrived_Toga") ||
+        (entry.status === "Arrived_Toga" && nextStatus === "Entered_Toga")) {
+      setConfirmationTarget(entry);
+      setPendingAction({ nextStatus });
+      return;
+    }
+    
+    // For other transitions, execute directly
+    if (nextStatus) {
+      const actionLabel = nextStatus === "Arrived_Toga" ? "Arrived" :
+                         nextStatus === "Entered_Toga" ? "Enter Room" :
+                         nextStatus === "Now Serving_Toga" ? "Serving" : "Update";
+      await updateQueueEntryStatus(priorityId, nextStatus);
+      await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): ${actionLabel}`);
+      refreshQueue();
+    }
+  };
 
-    await updateQueueEntryStatus(priorityId, config.nextStatus);
-    await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): ${config.btnLabel}`);
+  const handleConfirmation = async () => {
+    if (!confirmationTarget || !pendingAction) return;
+    const priorityId = confirmationTarget.priority_number || confirmationTarget.priorityNumber;
+    const nextStatus = pendingAction.nextStatus;
+    
+    const actionLabel = nextStatus === "Arrived_Toga" ? "Arrived" : "Enter Room";
+    await updateQueueEntryStatus(priorityId, nextStatus);
+    await logActivity(user?.id, user?.username, "Status Update", "Toga", `${confirmationTarget.student_name || confirmationTarget.studentName} (${priorityId}): ${actionLabel}`);
+    
+    setConfirmationTarget(null);
+    setPendingAction(null);
     refreshQueue();
+  };
+
+  const handleConfirmationCancel = () => {
+    setConfirmationTarget(null);
+    setPendingAction(null);
   };
 
   const handleRemarksDone = async (remarks) => {
@@ -515,11 +650,8 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     setRemarksTarget(null);
   };
 
-  const handleRemarksSkip = async () => {
+  const handleRemarksCancel = () => {
     if (!remarksTarget) return;
-    const priorityId = remarksTarget.priority_number || remarksTarget.priorityNumber;
-    await updateQueueEntryStatus(priorityId, "Done Toga");
-    refreshQueue();
     setRemarksTarget(null);
   };
 
@@ -604,12 +736,22 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
         backgroundSize: "40px 40px",
       }} />
 
+      {/* Confirmation Modal */}
+      {confirmationTarget && (
+        <ConfirmationModal
+          entry={confirmationTarget}
+          action={pendingAction}
+          onConfirm={handleConfirmation}
+          onCancel={handleConfirmationCancel}
+        />
+      )}
+
       {/* Remarks Modal */}
       {remarksTarget && (
         <RemarksModal
           entry={remarksTarget}
           onDone={handleRemarksDone}
-          onSkip={handleRemarksSkip}
+          onCancel={handleRemarksCancel}
         />
       )}
 
@@ -887,7 +1029,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
+                      onAction={(entry, actionType) => handleAction(entry, actionType)}
                       isDisabled={false}
                       maxHeight="520px"
                     />
@@ -909,7 +1051,7 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
                     <KanbanColumn
                       config={config}
                       entries={entries}
-                      onAction={(entry, actionType) => handleAction(entry, config, actionType)}
+                      onAction={(entry, actionType) => handleAction(entry, actionType)}
                       isDisabled={false}
                       maxHeight={config.key === "Now Serving_Toga" ? "320px" : "520px"}
                     />
