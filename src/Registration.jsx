@@ -714,11 +714,13 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
   const [nextSequence, setNextSequence] = useState(1);
   const previewPriority = generatePriorityNumber(nextSequence);
 
-  // Sync sequence counter from DB on mount so preview is always accurate
+  // Sync sequence counter from DB on mount AND periodically so external
+  // changes (e.g. DELETE FROM mqs_queue) are reflected without a page refresh
   useEffect(() => {
-    getTodayMaxSequence().then((max) => {
-      setNextSequence(max + 1);
-    });
+    const sync = () => getTodayMaxSequence().then((max) => setNextSequence(max + 1));
+    sync();
+    const interval = setInterval(sync, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load queue to know which students/programs are already registered
