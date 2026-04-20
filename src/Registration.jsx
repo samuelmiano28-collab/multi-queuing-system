@@ -42,9 +42,7 @@ async function getTodayMaxSequence() {
     .from("mqs_queue")
     .select("priority_number")
     .gte("created_at", `${todayStr}T00:00:00`)
-    .lte("created_at", `${todayStr}T23:59:59`)
-    .order("priority_number", { ascending: false })
-    .limit(1);
+    .lte("created_at", `${todayStr}T23:59:59`);
 
   if (error) {
     console.error("getTodayMaxSequence error:", error.message);
@@ -52,7 +50,9 @@ async function getTodayMaxSequence() {
   }
 
   if (!data || data.length === 0) return 0;
-  return data[0].priority_number ?? 0;
+  // Parse sequence numbers and find the maximum
+  const sequences = data.map(item => parseInt(item.priority_number.split('-')[2], 10) || 0);
+  return Math.max(...sequences);
 }
 
 // ─── Success Modal ────────────────────────────────────────────────────────────
