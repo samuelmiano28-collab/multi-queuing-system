@@ -582,11 +582,10 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
       return;
     }
     
-    // Handle "Serving" action - moves from Entered to Now Serving
+    // Handle "Serving" action - show confirmation before moving to Now Serving
     if (actionType === "serving") {
-      await updateQueueEntryStatus(priorityId, "Now Serving_Toga");
-      await logActivity(user?.id, user?.username, "Status Update", "Toga", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
-      refreshQueue();
+      setConfirmationTarget(entry);
+      setPendingAction({ nextStatus: "Now Serving_Toga", actionType: "serving" });
       return;
     }
     
@@ -626,8 +625,13 @@ export default function Toga({ newEntry, onBack, onLogout, user, onGlamSubmit, o
     if (!confirmationTarget || !pendingAction) return;
     const priorityId = confirmationTarget.priority_number || confirmationTarget.priorityNumber;
     const nextStatus = pendingAction.nextStatus;
+    const actionType = pendingAction.actionType;
     
-    const actionLabel = nextStatus === "Arrived_Toga" ? "Arrived" : "Enter Room";
+    let actionLabel = "Update";
+    if (nextStatus === "Arrived_Toga") actionLabel = "Arrived";
+    else if (nextStatus === "Entered_Toga") actionLabel = "Enter Room";
+    else if (nextStatus === "Now Serving_Toga") actionLabel = "Now Serving";
+    
     await updateQueueEntryStatus(priorityId, nextStatus);
     await logActivity(user?.id, user?.username, "Status Update", "Toga", `${confirmationTarget.student_name || confirmationTarget.studentName} (${priorityId}): ${actionLabel}`);
     

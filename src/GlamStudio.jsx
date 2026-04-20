@@ -583,11 +583,10 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
       return;
     }
     
-    // Handle "Serving" action - moves from Entered to Now Serving
+    // Handle "Serving" action - show confirmation before moving to Now Serving
     if (actionType === "serving") {
-      await updateQueueEntryStatus(priorityId, "Now Serving_Glam");
-      await logActivity(user?.id, user?.username, "Status Update", "Glam", `${entry.studentName || entry.student_name} (${priorityId}): Now Serving`);
-      refreshQueue();
+      setConfirmationTarget(entry);
+      setPendingAction({ nextStatus: "Now Serving_Glam", actionType: "serving" });
       return;
     }
     
@@ -627,8 +626,13 @@ export default function GlamStudio({ newEntry, onBack, onLogout, user, onTogaSub
     if (!confirmationTarget || !pendingAction) return;
     const priorityId = confirmationTarget.priorityNumber || confirmationTarget.priority_number;
     const nextStatus = pendingAction.nextStatus;
+    const actionType = pendingAction.actionType;
     
-    const actionLabel = nextStatus === "Arrived_Glam" ? "Arrived" : "Enter Room";
+    let actionLabel = "Update";
+    if (nextStatus === "Arrived_Glam") actionLabel = "Arrived";
+    else if (nextStatus === "Entered_Glam") actionLabel = "Enter Room";
+    else if (nextStatus === "Now Serving_Glam") actionLabel = "Now Serving";
+    
     await updateQueueEntryStatus(priorityId, nextStatus);
     await logActivity(user?.id, user?.username, "Status Update", "Glam", `${confirmationTarget.studentName || confirmationTarget.student_name} (${priorityId}): ${actionLabel}`);
     

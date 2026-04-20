@@ -588,11 +588,10 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
       return;
     }
     
-    // Handle "Serving" action - moves from Entered to Now Serving
+    // Handle "Serving" action - show confirmation before moving to Now Serving
     if (actionType === "serving") {
-      await updateQueueEntryStatus(priorityId, "Now Serving_OJT");
-      await logActivity(user?.id, user?.username, "Status Update", "OJT", `${entry.student_name || entry.studentName} (${priorityId}): Now Serving`);
-      refreshQueue();
+      setConfirmationTarget(entry);
+      setPendingAction({ nextStatus: "Now Serving_OJT", actionType: "serving" });
       return;
     }
     
@@ -632,8 +631,13 @@ export default function OJT({ newEntry, onBack, onLogout, user, onGlamSubmit, on
     if (!confirmationTarget || !pendingAction) return;
     const priorityId = confirmationTarget.priority_number || confirmationTarget.priorityNumber;
     const nextStatus = pendingAction.nextStatus;
+    const actionType = pendingAction.actionType;
     
-    const actionLabel = nextStatus === "Arrived_OJT" ? "Arrived" : "Enter Room";
+    let actionLabel = "Update";
+    if (nextStatus === "Arrived_OJT") actionLabel = "Arrived";
+    else if (nextStatus === "Entered_OJT") actionLabel = "Enter Room";
+    else if (nextStatus === "Now Serving_OJT") actionLabel = "Now Serving";
+    
     await updateQueueEntryStatus(priorityId, nextStatus);
     await logActivity(user?.id, user?.username, "Status Update", "OJT", `${confirmationTarget.student_name || confirmationTarget.studentName} (${priorityId}): ${actionLabel}`);
     
