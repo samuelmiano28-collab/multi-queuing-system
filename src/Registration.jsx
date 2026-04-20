@@ -32,17 +32,17 @@ function generatePriorityNumber(sequenceCount) {
  * across devices/sessions/tabs.
  */
 async function getTodayMaxSequence() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const todayStr = `${yyyy}-${mm}-${dd}`;
+  // Use UTC-based day boundaries so the filter works regardless of the
+  // server's timezone (Supabase stores created_at in UTC).
+  const now = new Date();
+  const startOfDayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
+  const endOfDayUTC   = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
 
   const { data, error } = await supabase
     .from("mqs_queue")
     .select("priority_number")
-    .gte("created_at", `${todayStr}T00:00:00`)
-    .lte("created_at", `${todayStr}T23:59:59`);
+    .gte("created_at", startOfDayUTC.toISOString())
+    .lte("created_at", endOfDayUTC.toISOString());
 
   if (error) {
     console.error("getTodayMaxSequence error:", error.message);
