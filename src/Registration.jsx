@@ -685,98 +685,6 @@ function QueueSummary({ refreshKey, students, programs }) {
         </div>
       </div>
 
-      {/* ── Station Counter Cards ──────────────────────────────────────────── */}
-      {(() => {
-        const doneGlamCount = queue.filter(e => {
-          const s = e.status ?? "";
-          return ["Done Glam","Arrived_Toga","Entered_Toga","Now Serving_Toga","Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
-        }).length;
-        const doneTogaCount = queue.filter(e => {
-          const s = e.status ?? "";
-          return ["Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
-        }).length;
-        const doneOJTCount = queue.filter(e => e.status === "Done OJT").length;
-
-        const statCards = [
-          {
-            title: "Glam Studio",
-            count: doneGlamCount,
-            total: queue.length,
-            totalLabel: "registered",
-            color: "#34d399",
-            bg: "rgba(52,211,153,0.08)",
-            border: "rgba(52,211,153,0.2)"
-          },
-          {
-            title: "Toga",
-            count: doneTogaCount,
-            total: doneGlamCount,
-            totalLabel: "passed Glam",
-            color: "#e2c06a",
-            bg: "rgba(226,192,106,0.08)",
-            border: "rgba(226,192,106,0.2)"
-          },
-          {
-            title: "OJT",
-            count: doneOJTCount,
-            total: doneTogaCount,
-            totalLabel: "passed Toga",
-            color: "#818cf8",
-            bg: "rgba(129,140,248,0.08)",
-            border: "rgba(129,140,248,0.2)"
-          }
-        ];
-
-        return (
-          <div style={{ marginTop: 16 }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6, marginBottom: 12
-            }}>
-              <svg width="13" height="13" fill="none" stroke="#e2c06a" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span style={{ color: "#e2c06a", fontWeight: 600, fontSize: 12 }}>Station Counter</span>
-              <span style={{ color: "#475569", fontSize: 10 }}>— students who completed each station</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-              {statCards.map((card, index) => (
-                <div key={index} style={{
-                  background: card.bg,
-                  border: `1px solid ${card.border}`,
-                  borderRadius: 12,
-                  padding: 16,
-                  textAlign: "center"
-                }}>
-                  <div style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: card.color,
-                    marginBottom: 8
-                  }}>
-                    {card.title}
-                  </div>
-                  <div style={{
-                    fontSize: 32,
-                    fontWeight: 800,
-                    color: card.color,
-                    fontFamily: "monospace",
-                    marginBottom: 4
-                  }}>
-                    {card.count}
-                  </div>
-                  <div style={{
-                    fontSize: 11,
-                    color: "#475569"
-                  }}>
-                    out of {card.total} {card.totalLabel}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
       {editEntry && (
         <EditModal
           entry={editEntry}
@@ -1070,6 +978,100 @@ export default function Registration({ user, onLogout, onSubmit, onTogaSubmit, o
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Queue Registration</h1>
           <p className="text-slate-400 mt-1">Register a student and assign a priority number for {activePage === "Registration" ? "Glam Studio" : activePage}.</p>
         </div>
+
+        {/* ── Station Counter Cards ──────────────────────────────────────────── */}
+        {(() => {
+          const doneGlamCount = queue.filter(e => {
+            const s = e.status ?? "";
+            return ["Done Glam","Arrived_Toga","Entered_Toga","Now Serving_Toga","Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
+          }).length;
+          const doneTogaCount = queue.filter(e => {
+            const s = e.status ?? "";
+            return ["Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
+          }).length;
+          const doneOJTCount = queue.filter(e => e.status === "Done OJT").length;
+
+          const statCards = [
+            {
+              title: "Glam Studio",
+              count: doneGlamCount,
+              total: queue.length,
+              totalLabel: "registered",
+              color: "#34d399",
+              bg: "rgba(52,211,153,0.08)",
+              border: "rgba(52,211,153,0.2)"
+            },
+            {
+              title: "Toga",
+              count: doneTogaCount,
+              total: doneGlamCount,
+              totalLabel: "passed Glam",
+              color: "#e2c06a",
+              bg: "rgba(226,192,106,0.08)",
+              border: "rgba(226,192,106,0.2)"
+            },
+            {
+              title: "OJT",
+              count: doneOJTCount,
+              total: doneTogaCount,
+              totalLabel: "passed Toga",
+              color: "#818cf8",
+              bg: "rgba(129,140,248,0.08)",
+              border: "rgba(129,140,248,0.2)"
+            }
+          ];
+
+          return (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6, marginBottom: 12
+              }}>
+                <svg width="13" height="13" fill="none" stroke="#e2c06a" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span style={{ color: "#e2c06a", fontWeight: 600, fontSize: 12 }}>Station Counter</span>
+                <span style={{ color: "#475569", fontSize: 10 }}>— students who completed each station</span>
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                {statCards.map((card, index) => (
+                  <div key={index} style={{
+                    background: card.bg,
+                    border: `1px solid ${card.border}`,
+                    borderRadius: 12,
+                    padding: 16,
+                    textAlign: "center",
+                    minWidth: "180px",
+                    flex: "1 1 auto"
+                  }}>
+                    <div style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: card.color,
+                      marginBottom: 8
+                    }}>
+                      {card.title}
+                    </div>
+                    <div style={{
+                      fontSize: 32,
+                      fontWeight: 800,
+                      color: card.color,
+                      fontFamily: "monospace",
+                      marginBottom: 4
+                    }}>
+                      {card.count}
+                    </div>
+                    <div style={{
+                      fontSize: 11,
+                      color: "#475569"
+                    }}>
+                      out of {card.total} {card.totalLabel}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
