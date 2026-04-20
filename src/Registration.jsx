@@ -325,7 +325,6 @@ function AvatarMenu({ user, onLogout, onProfileSubmit }) {
 function QueueSummary({ refreshKey, students, programs }) {
   const [queue, setQueue] = useState([]);
   const [editEntry, setEditEntry] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterProgram, setFilterProgram] = useState("All");
@@ -353,13 +352,6 @@ function QueueSummary({ refreshKey, students, programs }) {
     );
     setQueue(newQueue);
     setEditEntry(null);
-  };
-
-  const handleDelete = async (entry) => {
-    setDeletingId(entry.priorityNumber);
-    await removeFromQueue(entry.priorityNumber);
-    setQueue((prev) => prev.filter((e) => e.priorityNumber !== entry.priorityNumber));
-    setDeletingId(null);
   };
 
   const handleExportExcel = () => {
@@ -527,15 +519,17 @@ function QueueSummary({ refreshKey, students, programs }) {
         <div style={{ flexShrink: 0 }}>
           <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
+              <col style={{ width: "17%" }} />
               <col style={{ width: "22%" }} />
-              <col style={{ width: "26%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "16%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "12%" }} />
             </colgroup>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                {["Priority #", "Student", "Program", "Status", ""].map((h) => (
+                {["Priority #", "Student", "Program", "Glam", "Toga", "OJT", ""].map((h) => (
                   <th key={h} style={{
                     padding: "10px 12px", textAlign: "left",
                     color: "#64748b", fontSize: 10, fontWeight: 700,
@@ -551,16 +545,18 @@ function QueueSummary({ refreshKey, students, programs }) {
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }} className="custom-scroll">
           <table className="reg-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
+              <col style={{ width: "17%" }} />
               <col style={{ width: "22%" }} />
-              <col style={{ width: "26%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "16%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "12%" }} />
             </colgroup>
             <tbody>
               {filteredQueue.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "36px 16px", color: "#475569" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "36px 16px", color: "#475569" }}>
                     <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: "0 auto 8px", display: "block", opacity: 0.35 }}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
@@ -569,7 +565,68 @@ function QueueSummary({ refreshKey, students, programs }) {
                 </tr>
               ) : (
                 filteredQueue.map((entry, i) => {
-                  const sc = getStatusStyle(entry.status);
+                  // ── Derive per-station status badges ──────────────────────────
+                  // Glam status: always reflects the Glam-side milestone, read-only (never overwritten by Toga/OJT)
+                  const GLAM_STATUSES = ["Registered", "Arrived_Glam", "Entered_Glam", "Now Serving_Glam", "Done Glam"];
+                  const TOGA_STATUSES = ["Arrived_Toga", "Entered_Toga", "Now Serving_Toga", "Done Toga"];
+                  const OJT_STATUSES  = ["Arrived_OJT",  "Entered_OJT",  "Now Serving_OJT",  "Done OJT"];
+
+                  const st = entry.status ?? "";
+
+                  // Glam: show "Done Glam" if the student has progressed past glam (i.e. is now in Toga/OJT), otherwise current glam step
+                  let glamBadge = null;
+                  if (TOGA_STATUSES.includes(st) || OJT_STATUSES.includes(st) || st === "Done Toga" || st === "Done OJT") {
+                    glamBadge = { label: "Done Glam", bg: "rgba(52,211,153,0.12)", color: "#34d399", border: "rgba(52,211,153,0.3)" };
+                  } else if (GLAM_STATUSES.includes(st)) {
+                    const glamLabels = { Registered: "Registered", Arrived_Glam: "Arrived", Entered_Glam: "Entered", "Now Serving_Glam": "Serving", "Done Glam": "Done Glam" };
+                    const glamColors = {
+                      Registered:        { bg: "rgba(148,163,184,0.12)", color: "#94a3b8", border: "rgba(148,163,184,0.3)" },
+                      Arrived_Glam:      { bg: "rgba(59,130,246,0.12)",  color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+                      Entered_Glam:      { bg: "rgba(251,191,36,0.12)",  color: "#fbbf24", border: "rgba(251,191,36,0.3)" },
+                      "Now Serving_Glam":{ bg: "rgba(16,185,129,0.12)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
+                      "Done Glam":       { bg: "rgba(52,211,153,0.12)", color: "#34d399", border: "rgba(52,211,153,0.3)" },
+                    };
+                    glamBadge = { label: glamLabels[st] ?? st, ...(glamColors[st] ?? glamColors["Registered"]) };
+                  }
+
+                  // Toga status
+                  let togaBadge = null;
+                  if (OJT_STATUSES.includes(st) || st === "Done OJT") {
+                    togaBadge = { label: "Done Toga", bg: "rgba(201,168,76,0.12)", color: "#e2c06a", border: "rgba(201,168,76,0.3)" };
+                  } else if (TOGA_STATUSES.includes(st)) {
+                    const togaLabels = { Arrived_Toga: "Arrived", Entered_Toga: "Entered", "Now Serving_Toga": "Serving", "Done Toga": "Done Toga" };
+                    const togaColors = {
+                      Arrived_Toga:       { bg: "rgba(59,130,246,0.12)",  color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+                      Entered_Toga:       { bg: "rgba(251,191,36,0.12)",  color: "#fbbf24", border: "rgba(251,191,36,0.3)" },
+                      "Now Serving_Toga": { bg: "rgba(16,185,129,0.12)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
+                      "Done Toga":        { bg: "rgba(201,168,76,0.12)", color: "#e2c06a", border: "rgba(201,168,76,0.3)" },
+                    };
+                    togaBadge = { label: togaLabels[st] ?? st, ...(togaColors[st] ?? togaColors["Arrived_Toga"]) };
+                  }
+
+                  // OJT status
+                  let ojtBadge = null;
+                  if (OJT_STATUSES.includes(st)) {
+                    const ojtLabels = { Arrived_OJT: "Arrived", Entered_OJT: "Entered", "Now Serving_OJT": "Serving", "Done OJT": "Done OJT" };
+                    const ojtColors = {
+                      Arrived_OJT:        { bg: "rgba(59,130,246,0.12)",  color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+                      Entered_OJT:        { bg: "rgba(167,139,250,0.12)", color: "#a78bfa", border: "rgba(167,139,250,0.3)" },
+                      "Now Serving_OJT":  { bg: "rgba(16,185,129,0.12)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
+                      "Done OJT":         { bg: "rgba(99,102,241,0.12)", color: "#818cf8", border: "rgba(99,102,241,0.3)" },
+                    };
+                    ojtBadge = { label: ojtLabels[st] ?? st, ...(ojtColors[st] ?? ojtColors["Arrived_OJT"]) };
+                  }
+
+                  const renderBadge = (badge) => badge ? (
+                    <span style={{
+                      padding: "3px 7px", borderRadius: 20,
+                      background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`,
+                      fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
+                    }}>{badge.label}</span>
+                  ) : (
+                    <span style={{ color: "#334155", fontSize: 10 }}>—</span>
+                  );
+
                   return (
                     <tr
                       key={entry.priorityNumber}
@@ -597,55 +654,27 @@ function QueueSummary({ refreshKey, students, programs }) {
                       <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 12 }}>
                         {entry.programCode}
                       </td>
+                      <td style={{ padding: "8px 12px" }}>{renderBadge(glamBadge)}</td>
+                      <td style={{ padding: "8px 12px" }}>{renderBadge(togaBadge)}</td>
+                      <td style={{ padding: "8px 12px" }}>{renderBadge(ojtBadge)}</td>
                       <td style={{ padding: "10px 12px" }}>
-                        <span style={{
-                          padding: "3px 8px", borderRadius: 20,
-                          background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
-                          fontSize: 10, fontWeight: 600,
-                        }}>
-                          {entry.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <div style={{ display: "flex", gap: 5 }}>
-                          <button
-                            onClick={() => setEditEntry(entry)}
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 4,
-                              padding: "4px 8px", borderRadius: 7,
-                              background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.25)",
-                              color: "#7dd3fc", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                              transition: "background 0.15s",
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.22)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.1)"; }}
-                          >
-                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(entry)}
-                            disabled={deletingId === entry.priorityNumber}
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 4,
-                              padding: "4px 8px", borderRadius: 7,
-                              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)",
-                              color: "#f87171", fontSize: 11, fontWeight: 600,
-                              cursor: deletingId === entry.priorityNumber ? "not-allowed" : "pointer",
-                              opacity: deletingId === entry.priorityNumber ? 0.5 : 1,
-                              transition: "background 0.15s",
-                            }}
-                            onMouseEnter={(e) => { if (deletingId !== entry.priorityNumber) e.currentTarget.style.background = "rgba(239,68,68,0.22)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
-                          >
-                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            {deletingId === entry.priorityNumber ? "…" : "Del"}
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setEditEntry(entry)}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "4px 8px", borderRadius: 7,
+                            background: "rgba(99,179,237,0.1)", border: "1px solid rgba(99,179,237,0.25)",
+                            color: "#7dd3fc", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.22)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,179,237,0.1)"; }}
+                        >
+                          <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   );
@@ -655,6 +684,98 @@ function QueueSummary({ refreshKey, students, programs }) {
           </table>
         </div>
       </div>
+
+      {/* ── Station Counter Cards ──────────────────────────────────────────── */}
+      {(() => {
+        const doneGlamCount = queue.filter(e => {
+          const s = e.status ?? "";
+          return ["Done Glam","Arrived_Toga","Entered_Toga","Now Serving_Toga","Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
+        }).length;
+        const doneTogaCount = queue.filter(e => {
+          const s = e.status ?? "";
+          return ["Done Toga","Arrived_OJT","Entered_OJT","Now Serving_OJT","Done OJT"].includes(s);
+        }).length;
+        const doneOJTCount = queue.filter(e => e.status === "Done OJT").length;
+
+        const statCards = [
+          {
+            title: "Glam Studio",
+            count: doneGlamCount,
+            total: queue.length,
+            totalLabel: "registered",
+            color: "#34d399",
+            bg: "rgba(52,211,153,0.08)",
+            border: "rgba(52,211,153,0.2)"
+          },
+          {
+            title: "Toga",
+            count: doneTogaCount,
+            total: doneGlamCount,
+            totalLabel: "passed Glam",
+            color: "#e2c06a",
+            bg: "rgba(226,192,106,0.08)",
+            border: "rgba(226,192,106,0.2)"
+          },
+          {
+            title: "OJT",
+            count: doneOJTCount,
+            total: doneTogaCount,
+            totalLabel: "passed Toga",
+            color: "#818cf8",
+            bg: "rgba(129,140,248,0.08)",
+            border: "rgba(129,140,248,0.2)"
+          }
+        ];
+
+        return (
+          <div style={{ marginTop: 16 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6, marginBottom: 12
+            }}>
+              <svg width="13" height="13" fill="none" stroke="#e2c06a" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span style={{ color: "#e2c06a", fontWeight: 600, fontSize: 12 }}>Station Counter</span>
+              <span style={{ color: "#475569", fontSize: 10 }}>— students who completed each station</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+              {statCards.map((card, index) => (
+                <div key={index} style={{
+                  background: card.bg,
+                  border: `1px solid ${card.border}`,
+                  borderRadius: 12,
+                  padding: 16,
+                  textAlign: "center"
+                }}>
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: card.color,
+                    marginBottom: 8
+                  }}>
+                    {card.title}
+                  </div>
+                  <div style={{
+                    fontSize: 32,
+                    fontWeight: 800,
+                    color: card.color,
+                    fontFamily: "monospace",
+                    marginBottom: 4
+                  }}>
+                    {card.count}
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    color: "#475569"
+                  }}>
+                    out of {card.total} {card.totalLabel}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {editEntry && (
         <EditModal
