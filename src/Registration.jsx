@@ -32,8 +32,9 @@ function generatePriorityNumber(sequenceCount) {
  * across devices/sessions/tabs.
  */
 async function getTodayMaxSequence() {
-  // Query by priority_number prefix (e.g. "W17-T-") — completely timezone-proof
+  // Query by priority_label prefix (e.g. "W17-T-") — completely timezone-proof
   // because it never relies on created_at timestamps at all.
+  // Note: priority_label contains the text format "W17-T-001", priority_number is an integer.
   const now = new Date();
   const weekNum = getSundayWeekNumber(now);
   const dayCode = getDayCode(now);
@@ -41,8 +42,8 @@ async function getTodayMaxSequence() {
 
   const { data, error } = await supabase
     .from("mqs_queue")
-    .select("priority_number")
-    .like("priority_number", `${todayPrefix}%`);
+    .select("priority_label")
+    .like("priority_label", `${todayPrefix}%`);
 
   if (error) {
     console.error("getTodayMaxSequence error:", error.message);
@@ -51,7 +52,7 @@ async function getTodayMaxSequence() {
 
   if (!data || data.length === 0) return 0;
   // Parse sequence numbers and find the maximum
-  const sequences = data.map(item => parseInt(item.priority_number.split('-')[2], 10) || 0);
+  const sequences = data.map(item => parseInt(item.priority_label.split('-')[2], 10) || 0);
   return Math.max(...sequences);
 }
 
