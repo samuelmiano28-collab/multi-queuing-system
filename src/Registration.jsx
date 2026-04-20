@@ -32,17 +32,17 @@ function generatePriorityNumber(sequenceCount) {
  * across devices/sessions/tabs.
  */
 async function getTodayMaxSequence() {
-  // Use UTC-based day boundaries so the filter works regardless of the
-  // server's timezone (Supabase stores created_at in UTC).
+  // Query by priority_number prefix (e.g. "W17-T-") — completely timezone-proof
+  // because it never relies on created_at timestamps at all.
   const now = new Date();
-  const startOfDayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
-  const endOfDayUTC   = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
+  const weekNum = getSundayWeekNumber(now);
+  const dayCode = getDayCode(now);
+  const todayPrefix = `W${weekNum}-${dayCode}-`;
 
   const { data, error } = await supabase
     .from("mqs_queue")
     .select("priority_number")
-    .gte("created_at", startOfDayUTC.toISOString())
-    .lte("created_at", endOfDayUTC.toISOString());
+    .like("priority_number", `${todayPrefix}%`);
 
   if (error) {
     console.error("getTodayMaxSequence error:", error.message);
